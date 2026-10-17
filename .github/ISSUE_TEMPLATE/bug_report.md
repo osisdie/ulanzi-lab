@@ -20,4 +20,4 @@ labels: bug
 - Forge (`ULANZI_LAB_FORGE`): github / gitlab / auto
 
 **Logs**
-Attach the relevant part of `%LOCALAPPDATA%\ulanzi_lab\plugin.log`. Remove any hostnames or repo names you'd rather not share.
+Attach the relevant part of `%LOCALAPPDATA%\ulanzi-lab\plugin.log`. Remove any hostnames or repo names you'd rather not share.

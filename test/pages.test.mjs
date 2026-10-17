@@ -175,7 +175,7 @@ test('all new page templates render clean SVG', () => {
     status: { claude: { indicator: 'major' } }, http: { 'https://a.b/': { ok: false, code: 0, ms: 12, error: 'ENOTFOUND' } }, docker: { up: false }, n8n: { up: false } };
   const media = { media: { active: true, title: '夜に駆ける', artist: 'YOASOBI', status: 'Playing', position: 30, duration: 260, app: 'Spotify.exe' },
     audio: { volume: 40, muted: false, micMuted: true, outputs: [{ name: 'Headphones (USB)', isDefault: true }] }, art: { dataUrl: 'data:image/png;base64,AAAA', accent: '#aa3355' } };
-  const target = { id: 't', slot: 2, project: 'ulanzi_lab', state: 'waiting', kind: 'permission', tool: 'Bash', focus: { tmux: 'x', tmux_pane: '%1' } };
+  const target = { id: 't', slot: 2, project: 'ulanzi-lab', state: 'waiting', kind: 'permission', tool: 'Bash', focus: { tmux: 'x', tmux_pane: '%1' } };
   const svgs = [
     ...['art', 'prev', 'next', 'play', 'vol', 'voldown', 'volup', 'mic', 'output', 'spotify', 'ytmusic', 'wide'].map(p => P.mediaKey(p, media, { now, position: 31 })),
     P.mediaKey('art', { media: { active: false }, audio: null, art: null }), P.mediaKey('wide', { media: { active: false } }), P.mediaKey('mic', { audio: { micMuted: null } }),

@@ -1,4 +1,4 @@
-# Long-running Windows helper for ulanzi_lab: one JSON request per stdin line, one JSON reply per stdout line.
+# Long-running Windows helper for ulanzi-lab: one JSON request per stdin line, one JSON reply per stdout line.
 #   {"id":1,"cmd":"media"}  {"id":2,"cmd":"media.ctl","arg":"playpause"}  {"id":3,"cmd":"audio"}
 #   {"id":4,"cmd":"audio.set","arg":{"what":"mute"}}  {"id":5,"cmd":"perf"}
 # Media = Windows media session (SMTC: Spotify, browsers/YouTube Music, ...). Audio = Core Audio COM.

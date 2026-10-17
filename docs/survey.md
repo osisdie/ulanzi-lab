@@ -1,6 +1,6 @@
 # Survey: custom interactive desks (2026-10)
 
-These are the projects and docs reviewed before building ulanzi_lab. For each one, the note says **what we took from it**.
+These are the projects and docs reviewed before building ulanzi-lab. For each one, the note says **what we took from it**.
 
 ## Ulanzi platform
 

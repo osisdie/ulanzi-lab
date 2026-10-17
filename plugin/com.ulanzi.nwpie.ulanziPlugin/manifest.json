@@ -1,10 +1,10 @@
 {
   "Author": "nwpie",
-  "Name": "ulanzi_lab",
+  "Name": "ulanzi-lab",
   "Description": "Claude Code HITL lights + usage, TW/US stocks, system, WSL, AIoT, window layout",
   "Icon": "images/plugin.svg",
   "Version": "0.4.0",
-  "Category": "ulanzi_lab",
+  "Category": "ulanzi-lab",
   "CategoryIcon": "images/category.svg",
   "CodePath": "app.js",
   "Type": "JavaScript",

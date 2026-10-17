@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ulanzi_lab preview</title>
+<title>ulanzi-lab preview</title>
 <style>
   :root { --bg:#0b0e13; --panel:#141922; --fg:#e6edf3; --dim:#7d8590; --line:#252c37; --accent:#2d7ff9; --bad:#ff2d2d; }
   * { box-sizing: border-box; }
@@ -37,7 +37,7 @@
 </head>
 <body>
 <header>
-  <h1>ulanzi_lab</h1>
+  <h1>ulanzi-lab</h1>
   <span class="meta" id="meta">connecting…</span>
   <span id="alert">ALL CLEAR</span>
 </header>
@@ -119,7 +119,7 @@ function render(state) {
   const w = st.counts.waiting;
   $('#alert').textContent = w ? `⚑ ${w} WAITING` : 'ALL CLEAR';
   $('#alert').classList.toggle('on', w > 0);
-  document.title = w ? `(${w}) ⚑ ulanzi_lab` : 'ulanzi_lab preview';
+  document.title = w ? `(${w}) ⚑ ulanzi-lab` : 'ulanzi-lab preview';
   $('#nag').textContent = 'nag: ' + (st.nag ? 'on' : 'off');
   $('#nag').dataset.on = st.nag ? '1' : '';
   if (document.activeElement !== $('#theme')) $('#theme').value = st.theme || 'classic';

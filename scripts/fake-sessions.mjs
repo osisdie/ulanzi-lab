@@ -8,7 +8,7 @@ const N = Number(arg('n', 4));
 const SECONDS = Number(arg('seconds', 120));
 const USAGE = process.argv.includes('--usage');
 
-const projects = ['web-app', 'ulanzi_lab', 'ai-winform-ui', 'infra', 'docs-site', 'mobile', 'ml-pipeline', 'api'];
+const projects = ['web-app', 'ulanzi-lab', 'ai-winform-ui', 'infra', 'docs-site', 'mobile', 'ml-pipeline', 'api'];
 const post = (path, body) => fetch(HUB + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).catch(() => {});
 const sessions = Array.from({ length: N }, (_, i) => ({ id: `fake-${i + 1}-${Math.random().toString(36).slice(2, 6)}`, cwd: `/home/dev/${projects[i % projects.length]}` }));
 const ev = (s, name, extra = {}) => post('/hook', { session_id: s.id, hook_event_name: name, cwd: s.cwd, ts: Date.now(), focus: { src: 'fake' }, ...extra });

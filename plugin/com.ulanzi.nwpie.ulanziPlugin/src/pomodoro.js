@@ -1,4 +1,4 @@
-// Pomodoro / focus timer. State survives restarts (%LOCALAPPDATA%\ulanzi_lab\pomodoro.json).
+// Pomodoro / focus timer. State survives restarts (%LOCALAPPDATA%\ulanzi-lab\pomodoro.json).
 // While a focus block runs with DND on, the deck keeps lighting HITL keys but drops toasts and nag sounds.
 import fs from 'node:fs';
 import path from 'node:path';

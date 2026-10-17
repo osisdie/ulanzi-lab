@@ -7,7 +7,7 @@
 #   2. npm install (plugin deps: ws, koffi)
 #   3. links the plugin into Ulanzi Studio (directory junction → this repo)
 #   4. installs the Claude Code hooks + statusLine into WSL ~/.claude/settings.json (backup first)
-#   5. generates the "ulanzi_lab" profile from an existing D200X profile and makes it current
+#   5. generates the "ulanzi-lab" profile from an existing D200X profile and makes it current
 param([string]$EnvProfile = '', [switch]$FixWslConfig, [string]$Distro = '', [switch]$SkipHooks)
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -51,10 +51,10 @@ $wslconfig = Join-Path $env:USERPROFILE '.wslconfig'
 $cfg = if (Test-Path $wslconfig) { Get-Content $wslconfig -Raw } else { '' }
 if ($cfg -match '(?im)^\s*networkingMode\s*=\s*mirrored') { Good '.wslconfig networkingMode=mirrored' }
 elseif ($FixWslConfig) {
-    Copy-Item $wslconfig "$wslconfig.bak.ulanzi_lab" -ErrorAction SilentlyContinue
+    Copy-Item $wslconfig "$wslconfig.bak.ulanzi-lab" -ErrorAction SilentlyContinue
     if ($cfg -match '(?im)^\s*\[wsl2\]') { $cfg = $cfg -replace '(?im)^(\s*\[wsl2\]\s*)$', "`$1`r`nnetworkingMode=mirrored" } else { $cfg = "[wsl2]`r`nnetworkingMode=mirrored`r`n" + $cfg }
     Set-Content -Path $wslconfig -Value $cfg -Encoding ascii
-    Warn ".wslconfig updated (backup: .wslconfig.bak.ulanzi_lab). Run 'wsl --shutdown' once, then re-run this script."
+    Warn ".wslconfig updated (backup: .wslconfig.bak.ulanzi-lab). Run 'wsl --shutdown' once, then re-run this script."
 }
 else { Warn 'WSL is not in mirrored networking mode: hooks cannot reach the hub. Re-run with -FixWslConfig (Windows 11 22H2+), then wsl --shutdown.' }
 
@@ -92,6 +92,6 @@ Pop-Location
 if (-not (Get-Process UlanziDeck -ErrorAction SilentlyContinue)) { Start-Process $ulanziExe }
 
 Step 'Done'
-Good 'Ulanzi Studio restarted with the ulanzi_lab profile (8 pages).'
+Good 'Ulanzi Studio restarted with the ulanzi-lab profile (8 pages).'
 Good 'Browser preview: http://127.0.0.1:39300/'
 Write-Host '  New Claude Code sessions in WSL report to the deck; running ones pick the hooks up on their next event.'

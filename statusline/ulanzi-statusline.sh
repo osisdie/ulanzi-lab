@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ulanzi-statusline.sh — Claude Code statusLine that also feeds the ulanzi_lab hub.
+# ulanzi-statusline.sh — Claude Code statusLine that also feeds the ulanzi-lab hub.
 #
 # Prints:  Opus 5.5 · ctx 42% · 5h 63% ↻1h12m · 7d 31% · $1.23
 # Posts:   rate_limits / context_window.used_percentage / cost / model / session_id → $ULANZI_HUB/usage

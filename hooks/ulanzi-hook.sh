@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ulanzi-hook.sh — forward allowlisted Claude Code hook metadata to the ulanzi_lab hub.
+# ulanzi-hook.sh — forward allowlisted Claude Code hook metadata to the ulanzi-lab hub.
 #
 # Never blocks or changes Claude: prints nothing, always exits 0, posts in the background
 # with a 1 s timeout. Prompts, tool inputs and transcripts are NOT forwarded.

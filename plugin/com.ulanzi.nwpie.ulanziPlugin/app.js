@@ -1,4 +1,4 @@
-// ulanzi_lab plugin main service (started by Ulanzi Studio with: node app.js <address> <port> <language> <appVersion>).
+// ulanzi-lab plugin main service (started by Ulanzi Studio with: node app.js <address> <port> <language> <appVersion>).
 import './src/env.js'; // load .env before any module reads process.env
 import UlanziApi from './libs/ulanzi-api/index.js';
 import { log } from './src/log.js';

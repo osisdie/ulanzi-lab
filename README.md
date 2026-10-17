@@ -1,4 +1,4 @@
-# ulanzi_lab
+# ulanzi-lab
 
 A Claude Code companion deck for the **Ulanzi D200X** (5×3 LCD keys + one wide key) on **Windows + WSL**.
 
@@ -50,13 +50,13 @@ Ulanzi Studio ─spawns→ plugin app.js = hub + deck driver
 Clone the repo:
 
 ```bash
-git clone <this-repo-url> ulanzi_lab
+git clone <this-repo-url> ulanzi-lab
 ```
 
 Go into it:
 
 ```bash
-cd ulanzi_lab
+cd ulanzi-lab
 ```
 
 Create your machine settings:
@@ -77,7 +77,7 @@ powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
 2. Runs `npm install`.
 3. Links the plugin into Ulanzi Studio (a junction to this repo).
 4. Installs the hooks and statusLine into WSL's `~/.claude/settings.json`, after backing it up and keeping your existing hooks.
-5. Generates the **ulanzi_lab** profile from your D200X profile and starts Studio on it.
+5. Generates the **ulanzi-lab** profile from your D200X profile and starts Studio on it.
 
 Options:
 
@@ -212,7 +212,7 @@ node scripts/gallery.mjs
 ```
 Re-renders the README screenshots in `docs/images/` from demo data. It needs Chrome or Edge.
 
-- Logs: `%LOCALAPPDATA%\ulanzi_lab\plugin.log`. State: `state.json` and `pomodoro.json` in the same folder.
+- Logs: `%LOCALAPPDATA%\ulanzi-lab\plugin.log`. State: `state.json` and `pomodoro.json` in the same folder.
 - Node debugging: start Studio with `--nodeRemoteDebug`, then attach to `127.0.0.1:9231`.
 - Pages live in [src/pages.js](plugin/com.ulanzi.nwpie.ulanziPlugin/src/pages.js). The profile generator and the preview share it.
 

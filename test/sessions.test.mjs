@@ -16,8 +16,8 @@ test('sanitize drops prompts and tool inputs', () => {
 });
 
 test('projectName handles posix + windows paths', () => {
-  assert.equal(projectName('/home/u/git/ulanzi_lab/'), 'ulanzi_lab');
-  assert.equal(projectName('C:\\writable\\git\\nwpie\\ulanzi_lab'), 'ulanzi_lab');
+  assert.equal(projectName('/home/u/git/ulanzi-lab/'), 'ulanzi-lab');
+  assert.equal(projectName('C:\\writable\\git\\nwpie\\ulanzi-lab'), 'ulanzi-lab');
 });
 
 test('state table', () => {
