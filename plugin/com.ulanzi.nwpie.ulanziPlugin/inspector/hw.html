@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../libs/ulanzi-html/css/uspi.css"><title>ulanzi-lab</title></head>
+<body><div class="uspi-wrapper hidden"><form id="property-inspector">
+<div class="uspi-item"><div class="uspi-item-label">Metric</div><select class="uspi-item-value select" name="metric"><option value="cpu">CPU</option><option value="cores">Per-core heatmap</option><option value="ram">RAM</option><option value="gpu">GPU 3D</option><option value="vram">VRAM</option><option value="disk">Disk usage</option><option value="netdown">Network down</option><option value="netup">Network up</option><option value="diskio">Disk I/O</option><option value="uptime">Uptime</option><option value="temps">Temps (LibreHardwareMonitor)</option><option value="wide">Dashboard (wide)</option></select></div>
+<div class="uspi-item"><div class="uspi-item-label">Disk</div><input class="uspi-item-value" name="disk" value="C:" placeholder="C:"></div>
+<div class="uspi-item"><div class="uspi-item-label"></div><div class="uspi-item-value" style="opacity:.7;font-size:11px">Temperatures need LibreHardwareMonitor with its web server on :8085.</div></div>
+</form></div>
+<script src="../libs/ulanzi-html/js/constants.js"></script>
+<script src="../libs/ulanzi-html/js/eventEmitter.js"></script>
+<script src="../libs/ulanzi-html/js/timers.js"></script>
+<script src="../libs/ulanzi-html/js/utils.js"></script>
+<script src="../libs/ulanzi-html/js/ulanziApi.js"></script>
+<script src="./inspector.js"></script>
+</body></html>

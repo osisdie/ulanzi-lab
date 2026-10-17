@@ -1,0 +1,9 @@
+ulanzi-lab
+Copyright (c) 2026 ulanzi-lab contributors — MIT License (see LICENSE).
+
+This repository includes third-party code that keeps its own license:
+
+- plugin/com.ulanzi.nwpie.ulanziPlugin/libs/ulanzi-api
+- plugin/com.ulanzi.nwpie.ulanziPlugin/libs/ulanzi-html
+  From UlanziDeckPlugin-SDK (https://github.com/UlanziTechnology/UlanziDeckPlugin-SDK),
+  Apache License 2.0. See the LICENSE file in each folder.

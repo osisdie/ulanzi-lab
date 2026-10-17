@@ -1,0 +1,12 @@
+{
+  "name": "ulanzi-lab-plugin",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "ulanzi-lab: Claude Code HITL/usage deck + dev dashboard for Ulanzi D200X",
+  "main": "app.js",
+  "dependencies": {
+    "koffi": "^2.9.0",
+    "ws": "^8.18.0"
+  }
+}

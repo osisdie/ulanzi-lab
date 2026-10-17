@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../libs/ulanzi-html/css/uspi.css"><title>ulanzi-lab</title></head>
+<body><div class="uspi-wrapper hidden"><form id="property-inspector">
+<div class="uspi-item"><div class="uspi-item-label">Part</div><select class="uspi-item-value select" name="part"><option value="art">Album art (play/pause)</option><option value="wide">Now playing strip (wide)</option><option value="prev">Previous</option><option value="play">Play / pause</option><option value="next">Next</option><option value="vol">Volume ring (mute)</option><option value="voldown">Volume −</option><option value="volup">Volume +</option><option value="mic">Mic mute</option><option value="output">Output device (cycle)</option><option value="spotify">Open Spotify</option><option value="ytmusic">Open YouTube Music</option></select></div>
+<div class="uspi-item"><div class="uspi-item-label">Volume step</div><input class="uspi-item-value" name="step" value="5" placeholder="5"></div>
+<div class="uspi-item"><div class="uspi-item-label"></div><div class="uspi-item-value" style="opacity:.7;font-size:11px">Media from the Windows media session (Spotify app, YouTube Music in Chrome/Edge, …)</div></div>
+</form></div>
+<script src="../libs/ulanzi-html/js/constants.js"></script>
+<script src="../libs/ulanzi-html/js/eventEmitter.js"></script>
+<script src="../libs/ulanzi-html/js/timers.js"></script>
+<script src="../libs/ulanzi-html/js/utils.js"></script>
+<script src="../libs/ulanzi-html/js/ulanziApi.js"></script>
+<script src="./inspector.js"></script>
+</body></html>
