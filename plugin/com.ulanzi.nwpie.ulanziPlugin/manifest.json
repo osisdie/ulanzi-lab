@@ -1,0 +1,303 @@
+{
+  "Author": "nwpie",
+  "Name": "ulanzi_lab",
+  "Description": "Claude Code HITL lights + usage, TW/US stocks, system, WSL, AIoT, window layout",
+  "Icon": "images/plugin.svg",
+  "Version": "0.4.0",
+  "Category": "ulanzi_lab",
+  "CategoryIcon": "images/category.svg",
+  "CodePath": "app.js",
+  "Type": "JavaScript",
+  "Inspect": "--inspect=127.0.0.1:9231",
+  "PrivateAPI": true,
+  "UUID": "com.ulanzi.ulanzistudio.nwpie",
+  "Actions": [
+    {
+      "Name": "Claude Session",
+      "Icon": "images/session.svg",
+      "PropertyInspectorPath": "inspector/session.html",
+      "state": 0,
+      "States": [
+        {
+          "Name": "Claude Session",
+          "Image": "images/session.svg"
+        }
+      ],
+      "Tooltip": "One Claude Code session slot (S1..S8). Blinks when waiting on you; press to focus.",
+      "UUID": "com.ulanzi.ulanzistudio.nwpie.session",
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true,
+      "Controllers": [
+        "Keypad"
+      ],
+      "Devices": []
+    },
+    {
+      "Name": "Claude HITL",
+      "Icon": "images/hitl.svg",
+      "PropertyInspectorPath": "inspector/hitl.html",
+      "state": 0,
+      "States": [
+        {
+          "Name": "Claude HITL",
+          "Image": "images/hitl.svg"
+        }
+      ],
+      "Tooltip": "Count of sessions waiting on a human decision. Press to focus the longest-waiting one.",
+      "UUID": "com.ulanzi.ulanzistudio.nwpie.hitl",
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true,
+      "Controllers": [
+        "Keypad"
+      ],
+      "Devices": []
+    },
+    {
+      "Name": "Claude Usage",
+      "Icon": "images/usage.svg",
+      "PropertyInspectorPath": "inspector/usage.html",
+      "state": 0,
+      "States": [
+        {
+          "Name": "Claude Usage",
+          "Image": "images/usage.svg"
+        }
+      ],
+      "Tooltip": "5h / 7d rate-limit gauge (from statusLine). Put the wide variant on the large key.",
+      "UUID": "com.ulanzi.ulanzistudio.nwpie.usage",
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true,
+      "Controllers": [
+        "Keypad"
+      ],
+      "Devices": []
+    },
+    {
+      "Name": "Stock Quote",
+      "Icon": "images/stock.svg",
+      "PropertyInspectorPath": "inspector/stock.html",
+      "state": 0,
+      "States": [
+        {
+          "Name": "Stock Quote",
+          "Image": "images/stock.svg"
+        }
+      ],
+      "Tooltip": "TW or US quote (2330, t00, NVDA, ^DJI, GC=F). Comma list = multi-row strip. Red=up by default.",
+      "UUID": "com.ulanzi.ulanzistudio.nwpie.stock",
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true,
+      "Controllers": [
+        "Keypad"
+      ],
+      "Devices": []
+    },
+    {
+      "Name": "System Health",
+      "Icon": "images/sys.svg",
+      "state": 0,
+      "States": [
+        {
+          "Name": "System Health",
+          "Image": "images/sys.svg"
+        }
+      ],
+      "Tooltip": "CPU / RAM / GPU.",
+      "UUID": "com.ulanzi.ulanzistudio.nwpie.sys",
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true,
+      "Controllers": [
+        "Keypad"
+      ],
+      "Devices": []
+    },
+    {
+      "Name": "WSL",
+      "Icon": "images/wsl.svg",
+      "PropertyInspectorPath": "inspector/wsl.html",
+      "state": 0,
+      "States": [
+        {
+          "Name": "WSL",
+          "Image": "images/wsl.svg"
+        }
+      ],
+      "Tooltip": "WSL distro status. Press: open a WSL tab. Hold: wsl --shutdown (confirm).",
+      "UUID": "com.ulanzi.ulanzistudio.nwpie.wsl",
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true,
+      "Controllers": [
+        "Keypad"
+      ],
+      "Devices": []
+    },
+    {
+      "Name": "AIoT",
+      "Icon": "images/iot.svg",
+      "PropertyInspectorPath": "inspector/iot.html",
+      "state": 0,
+      "States": [
+        {
+          "Name": "AIoT",
+          "Image": "images/iot.svg"
+        }
+      ],
+      "Tooltip": "AIoT provider slot (mock for now). Press to toggle.",
+      "UUID": "com.ulanzi.ulanzistudio.nwpie.iot",
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true,
+      "Controllers": [
+        "Keypad"
+      ],
+      "Devices": []
+    },
+    {
+      "Name": "Window Layout",
+      "Icon": "images/layout.svg",
+      "PropertyInspectorPath": "inspector/layout.html",
+      "state": 0,
+      "States": [
+        {
+          "Name": "Window Layout",
+          "Image": "images/layout.svg"
+        }
+      ],
+      "Tooltip": "Snap the foreground window: halves, quarters, thirds, maximize, center, next monitor.",
+      "UUID": "com.ulanzi.ulanzistudio.nwpie.layout",
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true,
+      "Controllers": [
+        "Keypad"
+      ],
+      "Devices": []
+    },
+    {
+      "Name": "Media & Audio",
+      "Icon": "images/media.svg",
+      "PropertyInspectorPath": "inspector/media.html",
+      "state": 0,
+      "States": [
+        {
+          "Name": "Media & Audio",
+          "Image": "images/media.svg"
+        }
+      ],
+      "Tooltip": "Now playing (Spotify / YouTube Music via Windows media session), transport, volume, mic mute, output device.",
+      "UUID": "com.ulanzi.ulanzistudio.nwpie.media",
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true,
+      "Controllers": [
+        "Keypad"
+      ],
+      "Devices": []
+    },
+    {
+      "Name": "Focus Timer",
+      "Icon": "images/focus.svg",
+      "PropertyInspectorPath": "inspector/focus.html",
+      "state": 0,
+      "States": [
+        {
+          "Name": "Focus Timer",
+          "Image": "images/focus.svg"
+        }
+      ],
+      "Tooltip": "Pomodoro timer, today/week counts, DND (no toasts/nag while focusing), clock.",
+      "UUID": "com.ulanzi.ulanzistudio.nwpie.focus",
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true,
+      "Controllers": [
+        "Keypad"
+      ],
+      "Devices": []
+    },
+    {
+      "Name": "Hardware",
+      "Icon": "images/hw.svg",
+      "PropertyInspectorPath": "inspector/hw.html",
+      "state": 0,
+      "States": [
+        {
+          "Name": "Hardware",
+          "Image": "images/hw.svg"
+        }
+      ],
+      "Tooltip": "CPU / per-core / RAM / GPU / VRAM / disk / network / disk IO / uptime / temps (LibreHardwareMonitor).",
+      "UUID": "com.ulanzi.ulanzistudio.nwpie.hw",
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true,
+      "Controllers": [
+        "Keypad"
+      ],
+      "Devices": []
+    },
+    {
+      "Name": "DevOps",
+      "Icon": "images/devops.svg",
+      "PropertyInspectorPath": "inspector/devops.html",
+      "state": 0,
+      "States": [
+        {
+          "Name": "DevOps",
+          "Image": "images/devops.svg"
+        }
+      ],
+      "Tooltip": "PRs/MRs and review requests (GitHub or GitLab), review board, GitHub Actions, status pages, HTTP checks, Docker, n8n.",
+      "UUID": "com.ulanzi.ulanzistudio.nwpie.devops",
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true,
+      "Controllers": [
+        "Keypad"
+      ],
+      "Devices": []
+    },
+    {
+      "Name": "Claude Prompt",
+      "Icon": "images/prompt.svg",
+      "PropertyInspectorPath": "inspector/prompt.html",
+      "state": 0,
+      "States": [
+        {
+          "Name": "Claude Prompt",
+          "Image": "images/prompt.svg"
+        }
+      ],
+      "Tooltip": "Type a prompt or key into the target Claude session (tmux pane).",
+      "UUID": "com.ulanzi.ulanzistudio.nwpie.prompt",
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true,
+      "Controllers": [
+        "Keypad"
+      ],
+      "Devices": []
+    },
+    {
+      "Name": "Claude Target",
+      "Icon": "images/target.svg",
+      "state": 0,
+      "States": [
+        {
+          "Name": "Claude Target",
+          "Image": "images/target.svg"
+        }
+      ],
+      "Tooltip": "Shows which Claude session prompt keys go to. Press: next session; hold: auto (longest waiting).",
+      "UUID": "com.ulanzi.ulanzistudio.nwpie.target",
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true,
+      "Controllers": [
+        "Keypad"
+      ],
+      "Devices": []
+    }
+  ],
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Software": {
+    "MinVersion": "2.1.4"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "ulanzi_lab",
+  "private": true,
+  "version": "0.4.0",
+  "type": "module",
+  "description": "Claude Code companion deck for the Ulanzi D200X on Windows + WSL: HITL lights, usage gauges, code review (GitHub/GitLab), markets, hardware, media, focus timer, window layout.",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "dev": "node plugin/com.ulanzi.nwpie.ulanziPlugin/src/runtime.js",
+    "fake": "node scripts/fake-sessions.mjs",
+    "link": "powershell -ExecutionPolicy Bypass -File scripts/link-plugin.ps1",
+    "postinstall": "npm --prefix plugin/com.ulanzi.nwpie.ulanziPlugin install --no-audit --no-fund"
+  },
+  "license": "MIT",
+  "keywords": [
+    "ulanzi",
+    "d200x",
+    "stream-deck",
+    "claude-code",
+    "wsl",
+    "hooks",
+    "dashboard"
+  ]
+}

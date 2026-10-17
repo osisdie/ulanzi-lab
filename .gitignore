@@ -1,0 +1,9 @@
+node_modules/
+*.log
+ws-port.js
+tmp/
+
+# Machine / organisation settings live in .env (copy one of your .env.<name> files to .env).
+.env
+.env.*
+!.env.example

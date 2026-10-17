@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../libs/ulanzi-html/css/uspi.css"><title>ulanzi_lab</title></head>
+<body><div class="uspi-wrapper hidden"><form id="property-inspector">
+<div class="uspi-item"><div class="uspi-item-label">Label</div><input class="uspi-item-value" name="label" value="" placeholder="shown on the key"></div>
+<div class="uspi-item"><div class="uspi-item-label">Text</div><input class="uspi-item-value" name="text" value="" placeholder="typed into the session"></div>
+<div class="uspi-item"><div class="uspi-item-label">Keys</div><input class="uspi-item-value" name="keys" value="" placeholder="Enter, Escape, 1, 2, Up, Down (comma list)"></div>
+<div class="uspi-item"><div class="uspi-item-label">Icon</div><input class="uspi-item-value" name="icon" value="" placeholder="short glyph"></div>
+<div class="uspi-item"><div class="uspi-item-label">Enter after text</div><select class="uspi-item-value select" name="enter"><option value="on">Yes</option><option value="off">No</option></select></div>
+<div class="uspi-item"><div class="uspi-item-label">Require hold</div><select class="uspi-item-value select" name="hold"><option value="off">No</option><option value="on">Yes (hold to send)</option></select></div>
+<div class="uspi-item"><div class="uspi-item-label">Only when waiting</div><select class="uspi-item-value select" name="needsWaiting"><option value="off">No</option><option value="on">Yes (for approve keys)</option></select></div>
+<div class="uspi-item"><div class="uspi-item-label"></div><div class="uspi-item-value" style="opacity:.7;font-size:11px">Sent to the target session (see Claude Target key) via tmux send-keys. Non-tmux sessions are refused.</div></div>
+</form></div>
+<script src="../libs/ulanzi-html/js/constants.js"></script>
+<script src="../libs/ulanzi-html/js/eventEmitter.js"></script>
+<script src="../libs/ulanzi-html/js/timers.js"></script>
+<script src="../libs/ulanzi-html/js/utils.js"></script>
+<script src="../libs/ulanzi-html/js/ulanziApi.js"></script>
+<script src="./inspector.js"></script>
+</body></html>
