@@ -17,11 +17,6 @@ export function buildPages() {
   const forge = env('ULANZI_LAB_FORGE', 'auto').toLowerCase();
   const word = forge === 'github' ? 'PR' : forge === 'gitlab' ? 'MR' : 'Review';
 
-  // Page 1 row 3: the review board (default) or a few stocks (ULANZI_LAB_HOME_ROW=stocks + ULANZI_LAB_HOME_STOCKS).
-  const homeRow = env('ULANZI_LAB_HOME_ROW', 'board') === 'stocks'
-    ? (envList('ULANZI_LAB_HOME_STOCKS').length ? envList('ULANZI_LAB_HOME_STOCKS') : ['2330', '0050', 't00']).slice(0, 3).map(stock)
-    : [['devops', { kind: 'mr-total' }], ['devops', { kind: 'mr-ci' }], ['devops', { kind: 'mr-conflict' }]];
-
   // DevOps page: HTTP checks from ULANZI_LAB_HTTP_CHECKS ("url|label,url|label"); default checks the Claude API.
   const checks = envList('ULANZI_LAB_HTTP_CHECKS').map(http);
   if (!checks.length) checks.push(['devops', { kind: 'http', url: 'https://api.anthropic.com/', label: 'Anthropic API' }]);
@@ -29,11 +24,12 @@ export function buildPages() {
 
   const pages = [
     {
+      // Focus-work home: Claude sessions + HITL, usage/health, then a pomodoro + CI/CD bottom row (stocks live on Markets/Watchlist).
       name: 'Claude',
       keys: [
         ['0_0', 'session', { slot: 1 }], ['1_0', 'session', { slot: 2 }], ['2_0', 'session', { slot: 3 }], ['3_0', 'session', { slot: 4 }], ['4_0', 'hitl', { nag: 'off', theme: 'classic', style: 'mascot' }],
         ['0_1', 'usage', { window: '5h' }], ['1_1', 'usage', { window: '7d' }], ['2_1', 'sys', {}], ['3_1', 'wsl', {}], ['4_1', 'iot', { device: 'mock.lamp' }],
-        ['0_2', ...homeRow[0]], ['1_2', ...homeRow[1]], ['2_2', ...homeRow[2]], ['3_2', 'usage', { window: 'wide' }],
+        ['0_2', 'focus', { part: 'timer' }], ['1_2', 'focus', { part: 'count' }], ['2_2', ...ciKey], ['3_2', 'usage', { window: 'wide' }],
       ],
     },
     {

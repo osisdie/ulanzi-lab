@@ -103,8 +103,6 @@ See [.env.example](.env.example) for the full list with comments. After editing,
 | `ULANZI_LAB_BOARD_SCOPE` | `involves:@me` | GitHub search qualifiers for the PR board (`org:x`, `repo:o/r`, …) |
 | `ULANZI_LAB_ACTIONS_REPO` | (repos of your PRs) | `owner/name` for the GitHub Actions key |
 | `ULANZI_LAB_HTTP_CHECKS` | Claude API | Up to two `url\|label` health checks |
-| `ULANZI_LAB_HOME_ROW` | `board` | Bottom row of page 1: `board` (PR/MR counters) or `stocks` |
-| `ULANZI_LAB_HOME_STOCKS` | `2330,0050,t00` | Quote codes for `HOME_ROW=stocks` |
 | `ULANZI_LAB_WATCHLIST` | (none) | Up to 12 `SYMBOL:label` items. Adds a Watchlist page. |
 | `ULANZI_LAB_WATCHLIST_STRIP` | (none) | Up to 3 items for the Watchlist wide key (mini candlesticks) |
 | `ULANZI_LAB_DISTRO` | default distro | WSL distro the plugin talks to |
@@ -119,7 +117,7 @@ The page buttons (`0_3` / `1_3`) flip pages. Every page keeps a **HITL** key.
 
 | # | Page | Keys |
 |---|---|---|
-| 1 | **Claude** | Sessions S1–S4, HITL. 5h / 7d usage, system, WSL, AIoT. Bottom row: PR/MR counters or stocks. Wide key: fleet strip (sessions, usage bars, burn rate) |
+| 1 | **Claude** | Sessions S1–S4, HITL. 5h / 7d usage, system, WSL, AIoT. Bottom row: Pomodoro timer + count, CI/CD. Wide key: fleet strip (sessions, usage bars, burn rate) |
 | 2 | **Windows** | Snap the foreground window: halves, quarters, thirds, center, maximize. Presets: 2-split, 4-grid. Wide key: HITL banner |
 | 3 | **Markets** | TAIEX, Dow, S&P 500, Nasdaq, SOX, Nikkei, USD/TWD, DXY, USD/JPY, gold, WTI, BTC. Wide key: Brent / silver / copper candlesticks |
 | (4) | **Watchlist** | Only with `ULANZI_LAB_WATCHLIST`: your 12 symbols plus a 3-row candlestick strip |

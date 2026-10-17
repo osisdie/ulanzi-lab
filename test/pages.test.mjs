@@ -94,7 +94,7 @@ test('tmux send-keys script quotes text and filters keys', () => {
 
 /** Build pages with explicit settings (tests must not depend on the machine's .env). */
 function pagesWith(vars) {
-  const keys = ['ULANZI_LAB_FORGE', 'ULANZI_LAB_HOME_ROW', 'ULANZI_LAB_HOME_STOCKS', 'ULANZI_LAB_WATCHLIST', 'ULANZI_LAB_WATCHLIST_STRIP', 'ULANZI_LAB_HTTP_CHECKS', 'ULANZI_LAB_ACTIONS_REPO'];
+  const keys = ['ULANZI_LAB_FORGE', 'ULANZI_LAB_WATCHLIST', 'ULANZI_LAB_WATCHLIST_STRIP', 'ULANZI_LAB_HTTP_CHECKS', 'ULANZI_LAB_ACTIONS_REPO'];
   const saved = Object.fromEntries(keys.map(k => [k, process.env[k]]));
   for (const k of keys) delete process.env[k];
   Object.assign(process.env, vars);
@@ -104,7 +104,7 @@ function pagesWith(vars) {
 test('pages: every layout is unique in-range keys; .env drives forge, home row, watchlist', () => {
   const gitlab = pagesWith({ ULANZI_LAB_FORGE: 'gitlab' });
   const github = pagesWith({
-    ULANZI_LAB_FORGE: 'github', ULANZI_LAB_HOME_ROW: 'stocks', ULANZI_LAB_HOME_STOCKS: '2330,0050,t00',
+    ULANZI_LAB_FORGE: 'github',
     ULANZI_LAB_WATCHLIST: '^DJI:Dow,QQQ,NVDA:Nvidia', ULANZI_LAB_WATCHLIST_STRIP: 'GC=F:Gold,SI=F:Silver',
     ULANZI_LAB_HTTP_CHECKS: 'https://x.test/|X,https://y.test/', ULANZI_LAB_ACTIONS_REPO: 'o/r',
   });
@@ -116,9 +116,10 @@ test('pages: every layout is unique in-range keys; .env drives forge, home row, 
     for (const k of keys) assert.match(k, /^[0-4]_[0-2]$/, p.name);
     assert.ok(!keys.includes('4_2'), `${p.name}: 4_2 is covered by the wide key`);
   }
-  const home = (pages) => pages[0].keys.filter(k => k[0].endsWith('_2') && k[0] !== '3_2').map(k => k[2].kind || k[2].code);
-  assert.deepEqual(home(gitlab), ['mr-total', 'mr-ci', 'mr-conflict']);
-  assert.deepEqual(home(github), ['2330', '0050', 't00']);
+  // Page 1 bottom row is a fixed pomodoro + CI/CD row (no stocks); the CI/CD key follows the forge.
+  const home = (pages) => pages[0].keys.filter(k => k[0].endsWith('_2') && k[0] !== '3_2').map(k => `${k[1]}:${k[2].part ?? k[2].kind}`);
+  assert.deepEqual(home(gitlab), ['focus:timer', 'focus:count', 'devops:mr-ci']);
+  assert.deepEqual(home(github), ['focus:timer', 'focus:count', 'devops:gh-actions']);
   const devops = (pages) => Object.fromEntries(pages.find(p => p.name === 'DevOps').keys.map(k => [k[0], k[2]]));
   assert.equal(devops(github)['2_1'].kind, 'gh-actions');
   assert.equal(devops(github)['2_1'].repo, 'o/r');

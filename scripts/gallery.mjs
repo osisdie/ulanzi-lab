@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 process.env.ULANZI_LAB_ENV_FILE = path.join(process.env.TEMP || '/tmp', 'ulanzi-lab-demo-has-no-env'); // ignore the real .env
 Object.assign(process.env, {
-  ULANZI_LAB_FORGE: 'github', ULANZI_LAB_HOME_ROW: 'stocks', ULANZI_LAB_HOME_STOCKS: '2330,0050,t00',
+  ULANZI_LAB_FORGE: 'github',
   ULANZI_LAB_WATCHLIST: '^DJI:Dow,QQQ,NVDA:Nvidia,AAPL:Apple,GOOGL:Google,AMZN:Amazon,ASML,MSFT:Microsoft,TSLA:Tesla,META:Meta,AMD,AVGO:Broadcom',
   ULANZI_LAB_WATCHLIST_STRIP: 'GC=F:Gold,SI=F:Silver,^TNX:US10Y',
   ULANZI_LAB_HTTP_CHECKS: 'https://api.example.com/health|Public API', ULANZI_LAB_ACTIONS_REPO: 'acme/api',
