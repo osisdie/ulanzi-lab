@@ -3,9 +3,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 
-export const DATA_DIR = path.join(process.env.LOCALAPPDATA || os.tmpdir(), 'ulanzi-lab');
-const LEGACY_DIR = path.join(path.dirname(DATA_DIR), 'ulanzi_lab'); // pre-rename name: carry over logs + state
-try { if (!fs.existsSync(DATA_DIR) && fs.existsSync(LEGACY_DIR)) fs.renameSync(LEGACY_DIR, DATA_DIR); } catch { /* start fresh */ }
+const BASE = process.env.LOCALAPPDATA || os.tmpdir();
+// Pre-rename name: move it over (logs + state); if it is locked, keep using it this run and retry next start.
+function dataDir(dir = path.join(BASE, 'ulanzi-lab'), legacy = path.join(BASE, 'ulanzi_lab')) {
+  if (fs.existsSync(dir) || !fs.existsSync(legacy)) return dir;
+  try { fs.renameSync(legacy, dir); return dir; } catch { return legacy; }
+}
+export const DATA_DIR = dataDir();
 fs.mkdirSync(DATA_DIR, { recursive: true });
 const FILE = path.join(DATA_DIR, 'plugin.log');
 

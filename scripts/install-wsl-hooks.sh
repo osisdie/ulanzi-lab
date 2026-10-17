@@ -11,6 +11,7 @@ set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 DEST="$HOME/.claude/ulanzi-lab"
+OLD="$HOME/.claude/ulanzi_lab"  # pre-rename install dir
 SETTINGS="$HOME/.claude/settings.json"
 HOOK="$DEST/ulanzi-hook.sh"
 STATUS="$DEST/ulanzi-statusline.sh"
@@ -30,7 +31,8 @@ strip='
 
 if [ "$MODE" = "--uninstall" ]; then
   cp "$SETTINGS" "$SETTINGS.bak.ulanzi.$(date +%Y%m%d%H%M%S)"
-  prev='null'; [ -f "$DEST/prev-statusline.json" ] && prev="$(cat "$DEST/prev-statusline.json")"
+  prev='null'
+  for d in "$DEST" "$OLD"; do [ -f "$d/prev-statusline.json" ] && { prev="$(cat "$d/prev-statusline.json")"; break; }; done
   jq --argjson prev "$prev" "$strip"' |
       if (.statusLine.command // "" | test("/[.]claude/ulanzi[-_]lab/")) then
         (if $prev == null then del(.statusLine) else .statusLine = $prev end) else . end' "$SETTINGS" > "$SETTINGS.tmp"
@@ -41,7 +43,6 @@ fi
 
 # Copy scripts to the Linux filesystem (fast to exec; no /mnt/c or CRLF surprises).
 mkdir -p "$DEST"
-OLD="$HOME/.claude/ulanzi_lab"  # pre-rename install dir: keep the saved statusLine
 [ -f "$OLD/prev-statusline.json" ] && [ ! -f "$DEST/prev-statusline.json" ] && cp "$OLD/prev-statusline.json" "$DEST/"
 for f in "$REPO/hooks/ulanzi-hook.sh" "$REPO/statusline/ulanzi-statusline.sh"; do
   tr -d '\r' < "$f" > "$DEST/$(basename "$f")"
