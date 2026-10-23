@@ -9,12 +9,15 @@ import { nodeProblem } from './src/node-floor.js';
 import { findPatchedNode, supervise } from './src/supervisor.js';
 
 // In the supervised child: stop as soon as the parent (Studio's process) is gone, even before main.js has loaded.
-if (process.env.ULANZI_LAB_SUPERVISED === '1') {
-  if (!process.connected) process.exit(0);
+// The marker is removed so programs the plugin starts (terminals, gh/glab, Studio itself) don't inherit it.
+const supervised = process.env.ULANZI_LAB_SUPERVISED === '1';
+delete process.env.ULANZI_LAB_SUPERVISED;
+if (supervised) {
+  if (!process.connected) { log('supervised start without a parent channel; exiting'); process.exit(0); }
   process.on('disconnect', () => process.exit(0));
 }
 
-const wantChild = nodeProblem() && process.env.ULANZI_LAB_SUPERVISED !== '1' && process.env.ULANZI_LAB_NODE !== 'bundled';
+const wantChild = nodeProblem() && !supervised && process.env.ULANZI_LAB_NODE !== 'bundled';
 const node = wantChild ? findPatchedNode({ log }) : null;
 if (node) {
   log('plugin start', process.version, `(Studio's Node) → running the plugin on ${node.version}`);
