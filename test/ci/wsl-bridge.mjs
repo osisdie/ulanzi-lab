@@ -28,7 +28,11 @@ try {
 
   const found = await wsl.discoverSessions();
   const s = found?.find(x => x.session_id === 'ci-session');
-  assert.ok(s, `session not discovered: ${JSON.stringify(found)}`);
+  if (!s) {
+    const diag = await hostShell(`id; echo "HOME=$HOME"; ls -la ~/.claude/sessions; cat ~/.claude/sessions/${Number(pid)}.json; echo; `
+      + `ps -o pid,stat,lstart,args -p ${Number(pid)}; cut -d" " -f22 /proc/${Number(pid)}/stat`, { distro });
+    assert.fail(`session not discovered: ${JSON.stringify(found)}\n${diag.out}${diag.err}`);
+  }
   assert.deepEqual([s.cwd, s.busy, s.focus.src, s.focus.distro, s.focus.pid], ['/tmp/ci-project', true, 'wsl', distro, pid]);
 
   const alive = await wsl.alivePids(distro, [pid, '999999']);
