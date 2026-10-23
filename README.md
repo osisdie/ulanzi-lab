@@ -299,7 +299,7 @@ Re-renders the README screenshots in `docs/images/` from demo data. It needs Chr
 > The second line finds the real `node.exe` behind any version-manager shim. If `$target` sits in a per-shell or temporary folder (for example fnm's `fnm_multishells`), point the link at a stable install such as `C:\Program Files\nodejs\node.exe` instead. Nothing is renamed unless the target exists.
 > Restart Studio, then check that the `plugin start` line in the log shows your Node's version.
 > - **Undo:** delete the link and rename `node.bundled.exe` back to `node.exe`.
-> - **Before updating Studio, undo the link,** then re-apply it afterwards. The installer runs elevated and could otherwise write its old Node through the link over your system Node. If an update already went through with the link in place, check `node -v` (reinstall Node if it changed), delete the stale `node.bundled.exe`, and re-apply.
+> - **Before updating Studio, undo the link,** then re-apply it afterwards. The installer runs elevated and could otherwise write its old Node through the link over your system Node. If an update already went through with the link in place, check `node -v` and reinstall Node if it changed. If `nodejs\node.exe` is still a link, it now points at the fixed Node again and nothing else is needed. If the update replaced the link with a plain file, delete the stale `node.bundled.exe` and re-apply.
 > - **Other plugins** then run on your Node too. If one of them breaks on a newer major version, undo.
 > - **macOS:** the bundled Node sits inside the signed app bundle, and changing it can stop Studio from launching. Rely on the automatic switch described above instead.
 
