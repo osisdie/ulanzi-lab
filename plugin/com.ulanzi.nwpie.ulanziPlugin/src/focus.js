@@ -1,8 +1,11 @@
 // Bring a Claude Code session's terminal/editor to the front.
-// Order: tmux pane (WSL) → VS Code window → Windows Terminal tab (UIA title match) → any WT window.
+// Windows order: tmux pane (WSL) → VS Code window → Windows Terminal tab (UIA title match) → any WT window.
+// macOS: see mac/focus.js.
 import { execFile } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { IS_MAC } from './platform.js';
+import { createMacFocuser } from './mac/focus.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const run = (cmd, args, timeout = 4000) => new Promise((resolve) => {
@@ -10,6 +13,8 @@ const run = (cmd, args, timeout = 4000) => new Promise((resolve) => {
 });
 
 export function createFocuser(win32, { log = () => {} } = {}) {
+  if (IS_MAC) return createMacFocuser({ log });
+  if (!win32) return { focus: async () => false };
   const byExe = (re) => win32.listWindows({ includeMinimized: true }).filter(w => re.test(w.exeName));
 
   async function tmux(f) {

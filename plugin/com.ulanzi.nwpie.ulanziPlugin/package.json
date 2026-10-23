@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "ulanzi-lab: Claude Code HITL/usage deck + dev dashboard for Ulanzi D200X",
+  "description": "ulanzi-lab: Claude Code HITL/usage deck + dev dashboard for Ulanzi D200X (Windows + WSL, macOS)",
   "main": "app.js",
   "dependencies": {
     "koffi": "^2.9.0",

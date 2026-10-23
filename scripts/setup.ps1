@@ -72,7 +72,7 @@ Step 'Link plugin(s) into Ulanzi Studio'
 if (-not $SkipHooks -and $Distro) {
     Step 'Claude Code hooks in WSL'
     $wslRepo = (wsl.exe -d $Distro -e wslpath -a ($repo -replace '\\', '/')).Trim()
-    wsl.exe @wsl "cd '$wslRepo' && bash scripts/install-wsl-hooks.sh" | Out-Host
+    wsl.exe @wsl "cd '$wslRepo' && bash scripts/install-hooks.sh" | Out-Host
 }
 
 Step 'Ulanzi Studio profile'

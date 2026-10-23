@@ -1,6 +1,8 @@
 // Which WSL distro to talk to: $ULANZI_LAB_DISTRO, else the machine's default distro (`wsl -l -v`, the row marked *).
+// Windows only; elsewhere Claude Code runs on the host itself and this is null.
 import './env.js';
 import { execFileSync } from 'node:child_process';
+import { IS_WIN } from './platform.js';
 
 /** Parse `wsl.exe -l -v` output (already decoded) → default distro name, or null. */
 export function parseDefaultDistro(text) {
@@ -13,6 +15,7 @@ export function parseDefaultDistro(text) {
 
 let cached = null;
 export function defaultDistro() {
+  if (!IS_WIN) return null;
   if (cached) return cached;
   cached = process.env.ULANZI_LAB_DISTRO || null;
   if (!cached) {

@@ -34,26 +34,29 @@ export function createStores({ log = () => {} } = {}) {
   return { sessions, usage };
 }
 
-/** Prune sessions whose claude process is gone (WSL pids checked in one wsl.exe call per distro). */
-export function startLiveness({ sessions, wsl, log = () => {}, everyMs = 30e3 }) {
+/**
+ * Prune sessions whose claude process is gone. `host` is where Claude Code runs: WslProvider on Windows
+ * (pids checked in one wsl.exe call per distro) or LocalProvider on macOS.
+ */
+export function startLiveness({ sessions, host, log = () => {}, everyMs = 30e3 }) {
   // Sessions only report on their next hook; after a hub restart an idle session would stay invisible.
-  // Claude Code's own registry in WSL lists every live session, so seed from it.
+  // Claude Code's own registry lists every live session, so seed from it.
   const discover = async () => {
-    const found = await wsl.discoverSessions?.();
+    const found = await host.discoverSessions?.();
     for (const rec of found || []) if (sessions.seed(rec)) log('discovered session', rec.cwd.split('/').pop(), rec.focus.pid);
   };
   const tick = async () => {
     await discover();
-    const byDistro = new Map();
+    const byGroup = new Map();
     for (const s of sessions.list()) {
-      if (s.focus?.src === 'wsl' && s.focus.distro && s.focus.pid) {
-        if (!byDistro.has(s.focus.distro)) byDistro.set(s.focus.distro, []);
-        byDistro.get(s.focus.distro).push(s);
-      }
+      const g = host.groupOf?.(s);
+      if (!g) continue;
+      if (!byGroup.has(g)) byGroup.set(g, []);
+      byGroup.get(g).push(s);
     }
-    for (const [distro, list] of byDistro) {
-      if (wsl.get() && !wsl.get().running.includes(distro)) { list.forEach(s => sessions.remove(s.id)); continue; }
-      const alive = await wsl.alivePids(distro, list.map(s => s.focus.pid));
+    for (const [group, list] of byGroup) {
+      if (host.isDown?.(group)) { list.forEach(s => sessions.remove(s.id)); continue; }
+      const alive = await host.alivePids(group, list.map(s => s.focus.pid));
       if (!alive) continue;
       for (const s of list) if (!alive.has(String(s.focus.pid))) { log('liveness: drop', s.project, s.focus.pid); sessions.remove(s.id); }
     }
