@@ -299,14 +299,14 @@ Re-renders the README screenshots in `docs/images/` from demo data. It needs Chr
 >   Get-Process node -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$dir*" } | Stop-Process -Force
 >   Start-Sleep 2
 >   Rename-Item "$dir\node.exe" node.bundled.exe -ErrorAction Stop   # keep Studio's copy for undo
->   New-Item -ItemType SymbolicLink -Path "$dir\node.exe" -Target $target | Out-Null
+>   try { New-Item -ItemType SymbolicLink -Path "$dir\node.exe" -Target $target -ErrorAction Stop | Out-Null }
+>   catch { Rename-Item "$dir\node.bundled.exe" node.exe; throw }   # link failed: put Studio's copy back
 >   & "$dir\node.exe" --version                                     # should print your Node's version
->   Start-Process 'C:\Program Files (x86)\Ulanzi Studio\UlanziDeck.exe'
 > }
 > ```
 >
 > The second line finds the real `node.exe` behind any version-manager shim. If `$target` sits in a per-shell or temporary folder (for example fnm's `fnm_multishells`), point the link at a stable install such as `C:\Program Files\nodejs\node.exe` instead. Nothing is stopped or renamed unless the target exists.
-> Afterwards the `plugin start` line in the plugin log shows your Node's version, and the plugin no longer needs to switch Node itself.
+> Then start Studio as usual (Start menu), not from this window: anything started here runs as administrator, and so would every plugin. Afterwards the `plugin start` line in the plugin log shows your Node's version, and the plugin no longer needs to switch Node itself.
 > - **Undo:** with Studio closed, delete the link and rename `node.bundled.exe` back to `node.exe`.
 > - **Before updating Studio, undo the link,** then re-apply it afterwards. The installer runs elevated and could otherwise write its old Node through the link over your system Node. If an update already went through with the link in place, check `node -v` and reinstall Node if it changed. If `nodejs\node.exe` is still a link, it now points at the fixed Node again and nothing else is needed. If the update replaced the link with a plain file, delete the stale `node.bundled.exe` and re-apply.
 > - **Other plugins** then run on your Node too. If one of them breaks on a newer major version, undo.
