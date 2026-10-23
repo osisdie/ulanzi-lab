@@ -14,6 +14,9 @@
     "setup:mac": "bash scripts/setup-mac.sh",
     "postinstall": "cd plugin/com.ulanzi.nwpie.ulanziPlugin && npm install --no-audit --no-fund"
   },
+  "engines": {
+    "node": ">=22"
+  },
   "license": "MIT",
   "keywords": [
     "ulanzi",

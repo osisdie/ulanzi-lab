@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // `npm test`: run test/*.test.mjs with node:test. Lists the files itself because cmd.exe (npm on Windows)
-// doesn't expand globs and Node 20 (the Node bundled with Ulanzi Studio) doesn't either.
+// doesn't expand globs and Node 20 (Ulanzi Studio's bundled Node, tested in CI) doesn't either.
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';

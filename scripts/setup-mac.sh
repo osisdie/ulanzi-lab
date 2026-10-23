@@ -4,7 +4,7 @@
 #   bash scripts/setup-mac.sh [--env-profile <name>] [--skip-hooks]
 #
 #   0. --env-profile <name> copies .env.<name> to .env (machine settings; see .env.example)
-#   1. checks prerequisites (Node 20+, Ulanzi Studio, jq/curl; tmux, claude, gh, glab are optional)
+#   1. checks prerequisites (Node 22+, Ulanzi Studio, jq/curl; tmux, claude, gh, glab are optional)
 #   2. npm install
 #   3. links the plugin into Ulanzi Studio (symlink → this repo)
 #   4. installs the Claude Code hooks + statusLine into ~/.claude/settings.json (backup first)
@@ -44,7 +44,7 @@ fi
 step 'Prerequisites'
 if command -v node >/dev/null; then
   major="$(node -p 'process.versions.node.split(".")[0]')"
-  [ "$major" -ge 20 ] && good "node $(node -v)" || fail "node $(node -v) is too old (need 20+: brew install node)"
+  [ "$major" -ge 22 ] && good "node $(node -v)" || fail "node $(node -v) is past end of life (need 22+: brew install node)"
 else fail 'Node.js not found (brew install node)'; fi
 [ -d "$APP" ] && good 'Ulanzi Studio installed' || fail "Ulanzi Studio not found at $APP (install from ulanzi.com)"
 for t in jq curl; do command -v "$t" >/dev/null && good "$t" || fail "$t is missing (brew install $t)"; done

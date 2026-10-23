@@ -10,12 +10,14 @@ const distro = defaultDistro();
 const wsl = new WslProvider({ distro });
 
 // A long-running process inside WSL, registered like a live interactive session (procStart = /proc start time).
+// It registers itself and then execs sleep, so the pid and start time are its own (no setsid fork in between).
+const REGISTER = 'printf \'{"sessionId":"ci-session","cwd":"/tmp/ci-project","kind":"interactive","status":"busy","procStart":"%s"}\' '
+  + '"$(cut -d" " -f22 /proc/$$/stat)" > ~/.claude/sessions/$$.json; exec sleep 600';
 const setup = await hostShell([
   'mkdir -p ~/.claude/sessions',
-  'nohup setsid sleep 600 >/dev/null 2>&1 &',
+  `nohup sh -c '${REGISTER.replace(/'/g, `'\\''`)}' >/dev/null 2>&1 &`,
   'p=$!',
-  'st=$(cut -d" " -f22 /proc/$p/stat)',
-  'printf \'{"sessionId":"ci-session","cwd":"/tmp/ci-project","kind":"interactive","status":"busy","procStart":"%s"}\' "$st" > ~/.claude/sessions/$p.json',
+  'for i in 1 2 3 4 5 6 7 8 9 10; do [ -s ~/.claude/sessions/$p.json ] && break; sleep 0.2; done',
   'echo $p',
 ].join('\n'), { distro });
 assert.ok(setup.ok, `setup failed: ${setup.err}`);
@@ -26,8 +28,12 @@ try {
   assert.ok(wsl.get().running.includes(distro), `${distro} should be running: ${JSON.stringify(wsl.get())}`);
   assert.ok(wsl.get().mem > 0, 'memory from /proc/meminfo');
 
-  const found = await wsl.discoverSessions();
-  const s = found?.find(x => x.session_id === 'ci-session');
+  let found = null, s = null;
+  for (let i = 0; i < 3 && !s; i++) { // a cold distro can be slow to answer the first wsl.exe call
+    if (i) await new Promise(r => setTimeout(r, 2000));
+    found = await wsl.discoverSessions();
+    s = found?.find(x => x.session_id === 'ci-session');
+  }
   if (!s) {
     const diag = await hostShell(`id; echo "HOME=$HOME"; ls -la ~/.claude/sessions; cat ~/.claude/sessions/${Number(pid)}.json; echo; `
       + `ps -o pid,stat,lstart,args -p ${Number(pid)}; cut -d" " -f22 /proc/${Number(pid)}/stat`, { distro });
