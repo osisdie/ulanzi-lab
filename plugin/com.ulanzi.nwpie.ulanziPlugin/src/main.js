@@ -10,8 +10,6 @@ const UUID = 'com.ulanzi.ulanzistudio.nwpie';
 log('plugin start', process.version, process.argv.slice(2), process.connected ? '(child of the Studio process)' : '');
 const nodeIssue = nodeProblem();
 if (nodeIssue) log(`warning: ${nodeIssue}; install a patched Node (see src/node-floor.js) or update Ulanzi Studio`);
-// Running as the supervisor's child: when Studio stops the parent, the IPC channel closes; stop with it.
-if (process.connected) process.on('disconnect', () => process.exit(0));
 // Ulanzi Studio closes our stdout when it quits; the SDK still console.logs. Exit quietly instead of EPIPE spam.
 for (const stream of [process.stdout, process.stderr]) stream.on('error', (e) => { if (e.code === 'EPIPE') process.exit(0); });
 process.on('uncaughtException', (e) => log('uncaughtException', e.stack));

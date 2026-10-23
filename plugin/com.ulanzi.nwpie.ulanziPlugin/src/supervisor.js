@@ -22,28 +22,33 @@ export function nodeCandidates(env = process.env, platform = process.platform) {
   return [...new Set(list.filter(Boolean))];
 }
 
-/** The first installed Node with current security fixes (not the one running us), or null. */
+/**
+ * The first installed Node with current security fixes (not the one running us), or null.
+ * Returns the real binary (process.execPath), not a version-manager shim: a shim would run Node as a grandchild,
+ * out of reach of the IPC channel that ends the child together with Studio's process.
+ */
 export function findPatchedNode({ log = () => {}, candidates = nodeCandidates() } = {}) {
-  for (const file of candidates) {
-    if (!fs.existsSync(file) || path.resolve(file) === path.resolve(process.execPath)) continue;
-    const r = spawnSync(file, ['-p', 'process.version'], { timeout: 8000, windowsHide: true, encoding: 'utf8' });
-    const version = String(r.stdout || '').trim();
-    if (r.status !== 0 || !/^v\d+\.\d+\.\d+/.test(version)) continue;
+  for (const candidate of candidates) {
+    if (!fs.existsSync(candidate)) continue;
+    const r = spawnSync(candidate, ['-p', 'process.version + "\\n" + process.execPath'], { timeout: 8000, windowsHide: true, encoding: 'utf8' });
+    const [version = '', file = ''] = String(r.stdout || '').trim().split(/\r?\n/);
+    if (r.status !== 0 || !/^v\d+\.\d+\.\d+/.test(version) || !file || path.resolve(file) === path.resolve(process.execPath)) continue;
     const problem = nodeProblem(version);
     if (!problem) return { file, version };
-    log('supervisor: skip', file, problem);
+    log('supervisor: skip', candidate, problem);
   }
   return null;
 }
 
 /**
- * Run `entry` (app.js, with Studio's arguments) on `node` and keep it running. Resolves with false when the
- * child keeps dying right after start (the caller then runs the plugin in-process instead).
+ * Run `entry` (app.js, with Studio's arguments) on `node` and keep it running: a crashed child is restarted.
+ * A child that exits 0 stopped on purpose (Studio went away: EPIPE / disconnect), so this process exits too.
+ * Resolves with false when the child keeps crashing right after start (the caller then runs the plugin in-process).
  */
-export function supervise(node, entry, args, { log = () => {}, fastExitMs = 15e3, maxFastExits = 3 } = {}) {
+export function supervise(node, entry, args, { log = () => {}, fastExitMs = 15e3, maxFastExits = 3, exit = (c) => process.exit(c) } = {}) {
   return new Promise((resolve) => {
     let child = null, fastExits = 0, stopping = false;
-    const stop = () => { stopping = true; child?.kill(); process.exit(0); };
+    const stop = () => { stopping = true; child?.kill(); exit(0); };
     for (const sig of ['SIGTERM', 'SIGINT', 'SIGHUP']) process.on(sig, stop);
 
     function start() {
@@ -57,6 +62,7 @@ export function supervise(node, entry, args, { log = () => {}, fastExitMs = 15e3
       const ended = (why) => { // 'exit', or 'error' alone when the spawn itself fails
         if (done || stopping) return;
         done = true;
+        if (why === 0) { log('supervisor: child stopped (Studio is gone); exiting'); stopping = true; return exit(0); }
         fastExits = Date.now() - at < fastExitMs ? fastExits + 1 : 0;
         log('supervisor: child ended', why, fastExits ? `(fast exit ${fastExits}/${maxFastExits})` : '');
         if (fastExits >= maxFastExits) { for (const sig of ['SIGTERM', 'SIGINT', 'SIGHUP']) process.off(sig, stop); return resolve(false); }

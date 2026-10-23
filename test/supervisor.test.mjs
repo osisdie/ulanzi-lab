@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { nodeCandidates, findPatchedNode, supervise } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/supervisor.js';
 
 test('node candidates: override first, then PATH, then installer locations', () => {
@@ -25,5 +26,28 @@ test('supervise gives up after repeated fast exits so the plugin can run in-proc
   const ok = await supervise({ file: process.execPath, version: process.version }, entry, [], { log: (...a) => lines.push(a.join(' ')), maxFastExits: 2 });
   assert.equal(ok, false);
   assert.equal(lines.filter(l => l.includes('child ended')).length, 2);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('supervise exits with a child that stopped on purpose (exit 0) instead of restarting it', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ulanzi-sup-'));
+  const entry = path.join(dir, 'done.mjs');
+  fs.writeFileSync(entry, 'process.exit(0);\n');
+  const lines = [];
+  const code = await new Promise((resolve) => {
+    supervise({ file: process.execPath, version: process.version }, entry, [], { log: (...a) => lines.push(a.join(' ')), exit: resolve })
+      .then(() => resolve('resolved instead of exiting'));
+  });
+  assert.equal(code, 0);
+  assert.equal(lines.filter(l => l.includes('supervisor: started')).length, 1, 'not restarted');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('node-floor runs as a script through a symlinked path too', { skip: process.platform === 'win32' }, () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ulanzi-floor-'));
+  const link = path.join(dir, 'node-floor.js');
+  fs.symlinkSync(path.resolve('plugin/com.ulanzi.nwpie.ulanziPlugin/src/node-floor.js'), link);
+  const r = spawnSync(process.execPath, [link], { encoding: 'utf8' });
+  assert.match(r.stdout + r.stderr, /security fixes|end of life/);
   fs.rmSync(dir, { recursive: true, force: true });
 });

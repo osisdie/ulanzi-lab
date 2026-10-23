@@ -171,7 +171,13 @@ export function startHub({ sessions, usage, deck, focuser, providers = {}, port 
       json(res, 400, { error: e.message });
     }
   });
-  server.on('error', (e) => log('hub listen error', e.code, e.message));
-  server.listen(port, '127.0.0.1', () => log(`hub listening on http://127.0.0.1:${port}`));
+  // The previous plugin process may still hold the port for a moment (Studio restarts): retry for ~30 s.
+  let tries = 0;
+  server.on('error', (e) => {
+    log('hub listen error', e.code, e.message);
+    if (e.code === 'EADDRINUSE' && ++tries <= 15) setTimeout(() => server.listen(port, '127.0.0.1'), 2000);
+  });
+  server.on('listening', () => log(`hub listening on http://127.0.0.1:${port}`));
+  server.listen(port, '127.0.0.1');
   return { server, broadcast, close: () => { clearInterval(tick); server.close(); } };
 }

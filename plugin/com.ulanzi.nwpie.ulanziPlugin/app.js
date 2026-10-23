@@ -8,6 +8,12 @@ import { log } from './src/log.js';
 import { nodeProblem } from './src/node-floor.js';
 import { findPatchedNode, supervise } from './src/supervisor.js';
 
+// In the supervised child: stop as soon as the parent (Studio's process) is gone, even before main.js has loaded.
+if (process.env.ULANZI_LAB_SUPERVISED === '1') {
+  if (!process.connected) process.exit(0);
+  process.on('disconnect', () => process.exit(0));
+}
+
 const wantChild = nodeProblem() && process.env.ULANZI_LAB_SUPERVISED !== '1' && process.env.ULANZI_LAB_NODE !== 'bundled';
 const node = wantChild ? findPatchedNode({ log }) : null;
 if (node) {
