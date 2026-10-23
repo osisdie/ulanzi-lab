@@ -1,5 +1,5 @@
 // Wires stores, providers, OS helpers (Win32 + WSL on Windows, JXA on macOS), the deck controller and the hub together.
-// Used by app.js (inside Ulanzi Studio) and by `node src/runtime.js` (standalone dev + browser preview).
+// Used by src/main.js (inside Ulanzi Studio) and by `node src/runtime.js` (standalone dev + browser preview).
 import './env.js'; // load .env before any module reads process.env
 import { pathToFileURL } from 'node:url';
 import { log } from './log.js';

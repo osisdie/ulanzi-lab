@@ -24,7 +24,7 @@ Everything is driven by one Ulanzi Studio plugin (Node, bundled with Studio) plu
 WSL or macOS: claude sessions ── hooks/ulanzi-hook.sh ───────────┐  POST http://127.0.0.1:39300  (/hook, /usage)
 WSL or macOS: statusLine ─────── statusline/ulanzi-statusline.sh ─┘
                                                                   ▼
-Ulanzi Studio ─spawns→ plugin app.js = hub + deck driver
+Ulanzi Studio ─spawns→ plugin app.js ─(Studio's Node unpatched → child on a patched system Node)→ src/main.js = hub + deck driver
    ▲ ws 127.0.0.1:3906   ├─ sessions.js     state machine, HITL queue, liveness
    └─ key images/presses ├─ providers/      quotes · sys · wsl / local · media · hw · devops (gh/glab) · iot
                          ├─ render*.js      SVG key templates (themes, charts, mascot)
@@ -156,6 +156,7 @@ See [.env.example](.env.example) for the full list with comments. After editing,
 | `ULANZI_LAB_WATCHLIST` | (none) | Up to 12 `SYMBOL:label` items. Adds a Watchlist page. |
 | `ULANZI_LAB_WATCHLIST_STRIP` | (none) | Up to 3 items for the Watchlist wide key (mini candlesticks) |
 | `ULANZI_LAB_DISTRO` | default distro | WSL distro the plugin talks to |
+| `ULANZI_LAB_NODE` | found automatically | Node that runs the plugin when Studio's bundled one lacks security fixes; `bundled` keeps Studio's |
 | `ULANZI_LAB_N8N_URL` | `http://127.0.0.1:5678` | n8n key |
 | `ULANZI_LAB_PORT` / `ULANZI_LAB_GAP` | `39300` / `0` | Hub port / gap between snapped windows |
 
@@ -282,7 +283,7 @@ Re-renders the README screenshots in `docs/images/` from demo data. It needs Chr
 - **Windows Terminal.** It can't focus a tab by id, so tab focus is a best-effort title match. tmux and VS Code focus are exact.
 - **Elevated windows.** The plugin isn't elevated, so it can't move them.
 - **Port.** The hub uses port 39300 because some machines reserve the 45000–48000 range.
-- **Node inside Ulanzi Studio.** Studio 3.4 for Windows runs plugins on its own bundled Node 20.12.2 (check the Mac build's with the `plugin start` line in the log), which is past end of life and gets no security fixes. The plugin can't choose its runtime; update Ulanzi Studio when a newer build ships. Meanwhile the hub only listens on `127.0.0.1` and accepts JSON posts only. The plugin logs a warning at start while it runs on a Node without current security fixes. Your own Node (tools, `npm run dev`, CI) must have them: the minimum per release line is in [src/node-floor.js](plugin/com.ulanzi.nwpie.ulanziPlugin/src/node-floor.js), which the setup scripts and CI check.
+- **Node inside Ulanzi Studio.** Studio 3.4 for Windows runs plugins on its own bundled Node 20.12.2 (check the Mac build's with the `plugin start` line in the log), which is past end of life and gets no security fixes. So `app.js` checks its own Node first. When it lacks security fixes and a patched Node is installed (PATH, the usual install folders, or `ULANZI_LAB_NODE`), it only supervises: the plugin runs in a child process on that Node and stops when Studio stops the parent. Without a patched Node, or if the child keeps crashing, the plugin runs on Studio's Node and logs a warning. Keep your system Node updated. The hub only listens on `127.0.0.1` and accepts JSON posts only. Your own Node (tools, `npm run dev`, CI) must have them: the minimum per release line is in [src/node-floor.js](plugin/com.ulanzi.nwpie.ulanziPlugin/src/node-floor.js), which the setup scripts and CI check.
 
 ## Uninstall
 
