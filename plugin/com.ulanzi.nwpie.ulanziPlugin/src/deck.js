@@ -3,6 +3,7 @@
 // drives the real Ulanzi device and the browser preview.
 import { execFile, spawn } from 'node:child_process';
 import * as R from './render.js';
+import { IS_WIN, chime, openSystemMonitor } from './platform.js';
 import { previewRects, labelOf } from './layout.js';
 
 const LONG_PRESS_MS = 800;
@@ -200,8 +201,9 @@ export function createDeck({ sessions, usage, quotes, sys, wsl, iot, layout, foc
       }
       case 'usage': return;
       case 'stock': quotes.refreshSoon(); return;
-      case 'sys': spawn('taskmgr.exe', [], { detached: true, stdio: 'ignore' }).unref(); return;
+      case 'sys': openSystemMonitor(); return;
       case 'wsl': {
+        if (!IS_WIN) { toast('WSL is Windows-only'); return; }
         const distro = s.distro || wsl.distro;
         if (k.confirmUntil > now()) {
           k.confirmUntil = 0;
@@ -283,7 +285,7 @@ export function createDeck({ sessions, usage, quotes, sys, wsl, iot, layout, foc
     if (!due.length || t - nag.lastAt < nag.everyMs) return;
     nag.lastAt = t;
     log('nag', due.map(s => s.project));
-    execFile('powershell.exe', ['-NoProfile', '-c', `(New-Object Media.SoundPlayer '${CHIME}').PlaySync()`], { windowsHide: true }, () => {});
+    chime(CHIME);
   }
 
   return {

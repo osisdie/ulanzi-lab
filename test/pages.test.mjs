@@ -93,12 +93,12 @@ test('tmux send-keys script quotes text and filters keys', () => {
 });
 
 /** Build pages with explicit settings (tests must not depend on the machine's .env). */
-function pagesWith(vars) {
+function pagesWith(vars, platform = 'win32') {
   const keys = ['ULANZI_LAB_FORGE', 'ULANZI_LAB_WATCHLIST', 'ULANZI_LAB_WATCHLIST_STRIP', 'ULANZI_LAB_HTTP_CHECKS', 'ULANZI_LAB_ACTIONS_REPO'];
   const saved = Object.fromEntries(keys.map(k => [k, process.env[k]]));
   for (const k of keys) delete process.env[k];
   Object.assign(process.env, vars);
-  try { return buildPages(); } finally { for (const k of keys) { if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k]; } }
+  try { return buildPages({ platform }); } finally { for (const k of keys) { if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k]; } }
 }
 
 test('pages: every layout is unique in-range keys; .env drives forge, home row, watchlist', () => {
@@ -131,6 +131,16 @@ test('pages: every layout is unique in-range keys; .env drives forge, home row, 
   assert.deepEqual(watch.find(k => k[0] === '3_2')[2], { code: 'GC=F,SI=F', label: 'Gold,Silver' });
   assert.deepEqual(symLabel('otc:6488'), ['otc:6488', '']);
   assert.deepEqual(symLabel('GC=F:金'), ['GC=F', '金']);
+});
+
+test('pages on macOS: no WSL keys, same page set, root-volume disk key', () => {
+  const win = pagesWith({ ULANZI_LAB_FORGE: 'github' });
+  const mac = pagesWith({ ULANZI_LAB_FORGE: 'github' }, 'darwin');
+  assert.deepEqual(mac.map(p => p.name), win.map(p => p.name));
+  assert.ok(win.flatMap(p => p.keys).some(k => k[1] === 'wsl'));
+  assert.ok(!mac.flatMap(p => p.keys).some(k => k[1] === 'wsl'));
+  mac.forEach((p, i) => assert.deepEqual(p.keys.map(k => k[0]), win[i].keys.map(k => k[0]), p.name));
+  assert.equal(mac.find(p => p.name === 'Hardware').keys.find(k => k[0] === '1_1')[2].disk, '/');
 });
 
 test('parseEnv: comments, quotes, export, trailing comments', () => {

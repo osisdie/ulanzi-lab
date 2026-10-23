@@ -1,6 +1,6 @@
 # ulanzi-lab
 
-A Claude Code companion deck for the **Ulanzi D200X** (5×3 LCD keys + one wide key) on **Windows + WSL**.
+A Claude Code companion deck for the **Ulanzi D200X** (5×3 LCD keys + one wide key) on **Windows + WSL** and **macOS**.
 
 - **Never miss a waiting session.** When any Claude Code session needs a human decision (permission prompt, question, plan approval), its key blinks, a red wave ripples across the page, and a HITL key on every page counts the waiting sessions. Press it to jump straight to that session.
 - **Usage at a glance.** 5-hour and 7-day rate-limit gauges with reset countdowns and a burn-rate forecast, taken from the Claude Code statusLine (no extra API calls, no credentials).
@@ -18,18 +18,19 @@ A Claude Code companion deck for the **Ulanzi D200X** (5×3 LCD keys + one wide 
 
 <sub>Screenshots are rendered from demo data with <code>node scripts/gallery.mjs</code>, using the plugin's real key templates.</sub>
 
-Everything is driven by one Ulanzi Studio plugin (Node, bundled with Studio) plus small Claude Code hooks in WSL. A browser preview at `http://127.0.0.1:39300/` mirrors every page.
+Everything is driven by one Ulanzi Studio plugin (Node, bundled with Studio) plus small Claude Code hooks (in WSL on Windows, in your shell on macOS). A browser preview at `http://127.0.0.1:39300/` mirrors every page.
 
 ```
-WSL: claude sessions ── hooks/ulanzi-hook.sh ───────────┐  POST http://127.0.0.1:39300  (/hook, /usage)
-WSL: statusLine ─────── statusline/ulanzi-statusline.sh ─┘
-                                                         ▼
-Ulanzi Studio ─spawns→ plugin app.js = hub + deck driver
+WSL or macOS: claude sessions ── hooks/ulanzi-hook.sh ───────────┐  POST http://127.0.0.1:39300  (/hook, /usage)
+WSL or macOS: statusLine ─────── statusline/ulanzi-statusline.sh ─┘
+                                                                  ▼
+Ulanzi Studio ─spawns→ plugin app.js ─(Studio's Node unpatched → child on a patched system Node)→ src/main.js = hub + deck driver
    ▲ ws 127.0.0.1:3906   ├─ sessions.js     state machine, HITL queue, liveness
-   └─ key images/presses ├─ providers/      quotes · sys · wsl · media · hw · devops (gh/glab) · iot
+   └─ key images/presses ├─ providers/      quotes · sys · wsl / local · media · hw · devops (gh/glab) · iot
                          ├─ render*.js      SVG key templates (themes, charts, mascot)
                          ├─ win32.js        user32 via koffi → window layout / focus
                          ├─ ps/winhelper.ps1 media session, Core Audio, perf counters
+                         ├─ mac/            macOS: JXA bridge (System Events) for layout, focus, media
                          └─ hub.js          HTTP + SSE + browser preview
 ```
 
@@ -37,7 +38,7 @@ Ulanzi Studio ─spawns→ plugin app.js = hub + deck driver
 
 **Prerequisites**
 
-- Node.js 18 or newer.
+- Node.js 22.23.4+ or 24.22.1+ (LTS with the October 2026 security fixes).
 - Ulanzi Studio. Connect the D200X and open Studio once, so it creates a "Default Profile".
 - WSL2 with `jq` and `curl`.
 - Optional:
@@ -90,6 +91,55 @@ Options:
 
 After pulling updates, re-run `scripts\setup.ps1`. Your `.env` is kept, so the deck still has your own pages and forge.
 
+## Quick start (macOS)
+
+**Prerequisites**
+
+- macOS 12 or newer and Node.js 22.23.4+ or 24.22.1+ (LTS with the October 2026 security fixes).
+- Ulanzi Studio for Mac. Connect the D200X and open Studio once, so it creates a "Default Profile".
+- `jq` and `curl` (`brew install jq`).
+- Optional:
+  - `tmux` for the Claude Pad and exact focus.
+  - `gh` or `glab` (logged in) for code review.
+  - `switchaudio-osx` for the audio output key.
+  - Docker Desktop or n8n for their keys.
+
+**Install**
+
+```bash
+git clone <this-repo-url> ulanzi-lab
+cd ulanzi-lab
+cp .env.example .env
+bash scripts/setup-mac.sh
+```
+
+The script:
+
+1. Checks the prerequisites.
+2. Runs `npm install`.
+3. Symlinks the plugin into `~/Library/Application Support/Ulanzi/UlanziDeck/Plugins`.
+4. Installs the hooks and statusLine into `~/.claude/settings.json`, after backing it up and keeping your existing hooks.
+5. Generates the **ulanzi-lab** profile from your D200X profile and starts Studio on it.
+
+`--env-profile <name>` and `--skip-hooks` work like their `setup.ps1` counterparts.
+
+**Permissions.** macOS asks the first time a key needs one. Allow them for Ulanzi Studio:
+
+- **Accessibility:** window layout keys.
+- **Automation:** System Events, iTerm2 / Terminal (jump to a session's tab), Spotify / Music (media keys).
+
+**What is different on macOS**
+
+| Area | macOS |
+|---|---|
+| Sessions, HITL, usage, Claude Pad, code review | The same. Hooks, `tmux`, `gh` and `glab` run in your own shell instead of WSL. |
+| Focus | tmux pane → iTerm2 / Terminal tab (matched by tty) → VS Code folder → the session's terminal app. |
+| Window layout | Through System Events. **Restore** puts a window back where it was before its first snap. Full-screen windows can't be moved. |
+| Media | Spotify and Music only, since macOS has no public now-playing API. Album art comes from Spotify. |
+| Audio | Volume, mute, and mic (input volume 0). Switching outputs needs `SwitchAudioSource`. |
+| Hardware | CPU, cores, RAM, GPU %, GPU memory in use, network, disk I/O, root volume. No temperatures and no disk busy %. |
+| WSL keys | Replaced by Docker (page 1), System Health (Hardware) and RAM (DevOps). |
+
 ## Configuration (`.env`)
 
 Every organisation- or machine-specific value lives in `.env` at the repo root. Git ignores it, along with every other `.env.*` except `.env.example`.
@@ -106,6 +156,7 @@ See [.env.example](.env.example) for the full list with comments. After editing,
 | `ULANZI_LAB_WATCHLIST` | (none) | Up to 12 `SYMBOL:label` items. Adds a Watchlist page. |
 | `ULANZI_LAB_WATCHLIST_STRIP` | (none) | Up to 3 items for the Watchlist wide key (mini candlesticks) |
 | `ULANZI_LAB_DISTRO` | default distro | WSL distro the plugin talks to |
+| `ULANZI_LAB_NODE` | found automatically | Node that runs the plugin when Studio's bundled one lacks security fixes; `bundled` keeps Studio's |
 | `ULANZI_LAB_N8N_URL` | `http://127.0.0.1:5678` | n8n key |
 | `ULANZI_LAB_PORT` / `ULANZI_LAB_GAP` | `39300` / `0` | Hub port / gap between snapped windows |
 
@@ -129,8 +180,8 @@ The page buttons (`0_3` / `1_3`) flip pages. Every page keeps a **HITL** key.
 | 9 | **Claude Pad** | Approve (1) / Always (2) / Esc / Enter, plus `continue`, `/compact`, run tests, commit, review diff, `/clear` (hold), explain error, plan first. Wide key: target session |
 
 **Code review works the same on GitHub and GitLab:**
-- `glab` / `gh` run inside WSL, so the CLI's own login is used.
-- If you aren't logged in, pressing a review key opens a Windows Terminal tab that runs `glab auth login` / `gh auth login`.
+- `glab` / `gh` run inside WSL (in your shell on macOS), so the CLI's own login is used.
+- If you aren't logged in, pressing a review key opens a Windows Terminal tab (a Terminal window on macOS) that runs `glab auth login` / `gh auth login`.
 - Holding any DevOps key refreshes it.
 
 ## Actions
@@ -170,6 +221,8 @@ The page buttons (`0_3` / `1_3`) flip pages. Every page keeps a **HITL** key.
   2. The VS Code window with that folder.
   3. A Windows Terminal tab whose title matches.
   4. Any Windows Terminal window.
+
+  On macOS: the tmux pane, then the iTerm2 / Terminal tab with the session's tty, then the VS Code folder, then the terminal app.
 - **Liveness.** Sessions whose claude process has exited are dropped within 30 s.
 
 ## Privacy and security
@@ -188,6 +241,13 @@ npm test
 Runs the `node:test` suite: state machine, parsers, page layouts, every SVG template.
 
 ```bash
+npm run smoke
+bash test/ci/shell-checks.sh
+```
+Boots the whole runtime with this OS's backends, and checks the hook, statusLine and hook installer.
+CI runs the tests and the smoke test on Windows, macOS and Linux, plus a Windows + WSL job (`test/ci/wsl-bridge.mjs`) where the plugin on Windows Node discovers a session inside WSL.
+
+```bash
 npm run dev
 ```
 Runs the hub, providers and preview standalone. Set `ULANZI_LAB_PORT=39301` if the plugin is also running.
@@ -203,7 +263,8 @@ node scripts/demo-states.mjs
 Shows every session look on page 1.
 
 ```bash
-npm run link
+npm run link        # Windows
+npm run link:mac    # macOS
 ```
 Re-links the plugin and restarts Ulanzi Studio.
 
@@ -212,7 +273,7 @@ node scripts/gallery.mjs
 ```
 Re-renders the README screenshots in `docs/images/` from demo data. It needs Chrome or Edge.
 
-- Logs: `%LOCALAPPDATA%\ulanzi-lab\plugin.log`. State: `state.json` and `pomodoro.json` in the same folder.
+- Logs: `%LOCALAPPDATA%\ulanzi-lab\plugin.log` (macOS: `~/Library/Application Support/ulanzi-lab/plugin.log`). State: `state.json` and `pomodoro.json` in the same folder.
 - Node debugging: start Studio with `--nodeRemoteDebug`, then attach to `127.0.0.1:9231`.
 - Pages live in [src/pages.js](plugin/com.ulanzi.nwpie.ulanziPlugin/src/pages.js). The profile generator and the preview share it.
 
@@ -222,19 +283,26 @@ Re-renders the README screenshots in `docs/images/` from demo data. It needs Chr
 - **Windows Terminal.** It can't focus a tab by id, so tab focus is a best-effort title match. tmux and VS Code focus are exact.
 - **Elevated windows.** The plugin isn't elevated, so it can't move them.
 - **Port.** The hub uses port 39300 because some machines reserve the 45000–48000 range.
+- **Node inside Ulanzi Studio.** Studio 3.4 for Windows runs plugins on its own bundled Node 20.12.2 (check the Mac build's with the `plugin start` line in the log), which is past end of life and gets no security fixes. So `app.js` checks its own Node first. When it lacks security fixes and a patched Node is installed (PATH, the usual install folders, or `ULANZI_LAB_NODE`), it only supervises: the plugin runs in a child process on that Node and stops when Studio stops the parent. Without a patched Node, or if the child keeps crashing, the plugin runs on Studio's Node and logs a warning. Keep your system Node updated. The hub only listens on `127.0.0.1` and accepts JSON posts only. Your own Node (tools, `npm run dev`, CI) must have them: the minimum per release line is in [src/node-floor.js](plugin/com.ulanzi.nwpie.ulanziPlugin/src/node-floor.js), which the setup scripts and CI check.
 
 ## Uninstall
 
-Run this from the repo, inside WSL:
+Run this from the repo, inside WSL (or in a terminal on macOS):
 
 ```bash
-bash scripts/install-wsl-hooks.sh --uninstall
+bash scripts/install-hooks.sh --uninstall
 ```
 
-Then remove the plugin link from Windows:
+Then remove the plugin link. On Windows:
 
 ```bash
 powershell -ExecutionPolicy Bypass -File scripts\link-plugin.ps1 -Unlink
+```
+
+On macOS:
+
+```bash
+bash scripts/link-plugin.sh --unlink
 ```
 
 ## Third-party code

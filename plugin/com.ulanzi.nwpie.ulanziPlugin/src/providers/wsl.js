@@ -75,6 +75,11 @@ export class WslProvider extends EventEmitter {
     return out ? parseRegistry(out.toString('utf8'), distro) : null;
   }
 
+  /** Liveness group for a session (its distro), or null when it can't be checked from here. */
+  groupOf(s) { return s.focus?.src === 'wsl' && s.focus.distro && s.focus.pid ? s.focus.distro : null; }
+  /** A distro that is known to be stopped: all of its sessions are gone. */
+  isDown(distro) { return !!this.s && !this.s.running.includes(distro); }
+
   /** pids alive inside a distro (for Claude session liveness). */
   async alivePids(distro, pids) {
     if (!pids.length) return new Set();

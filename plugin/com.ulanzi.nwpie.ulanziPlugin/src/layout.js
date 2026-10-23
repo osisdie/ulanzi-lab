@@ -1,5 +1,6 @@
 // Window layouts (Rectangle / FancyZones style) for the foreground window + multi-window presets.
-// Geometry is pure (fractions of the monitor work area) so it is unit-testable; win32 does the I/O.
+// Geometry is pure (fractions of the monitor work area) so it is unit-testable; the OS backend
+// (win32.js, or mac/windows.js on macOS) does the I/O.
 
 const r = (x, y, w, h) => ({ x, y, w, h });
 
@@ -104,7 +105,7 @@ export function createLayoutEngine(win32, { gap = 0, log = () => {} } = {}) {
     if (!p || !fg) return { ok: false };
     const { work } = win32.workAreaOf(fg.hwnd);
     const sameMon = (w) => { const a = win32.workAreaOf(w.hwnd).work; return a.x === work.x && a.y === work.y; };
-    const wins = win32.listWindows().filter(w => !/UlanziDeck\.exe$/i.test(w.exe) && win32.isResizable(w.hwnd) && sameMon(w)).slice(0, p.rects.length);
+    const wins = win32.listWindows().filter(w => !/UlanziDeck\.exe$|^Ulanzi Studio$/i.test(w.exe) && win32.isResizable(w.hwnd) && sameMon(w)).slice(0, p.rects.length);
     wins.forEach((w, i) => win32.place(w.hwnd, toPixels(p.rects[i], work, gap)));
     if (wins[0]) win32.activate(wins[0].hwnd);
     log('preset', name, wins.map(w => w.exeName));

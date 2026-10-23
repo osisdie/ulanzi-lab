@@ -129,7 +129,7 @@ t = NOW;
 const pages = createPageActions({ media, hw, devops, pomodoro, sessions, toast: on, now: () => NOW });
 const deck = createDeck({ sessions, usage, quotes, sys, wsl, iot, layout: { apply: () => ({ ok: true }) }, focuser: { focus: async () => true }, pages, now: () => NOW });
 deck.addSink('g', { setIcon: on, toast: on });
-const PAGES = buildPages();
+const PAGES = buildPages({ platform: 'win32' }); // the README shows the Windows deck (WSL key)
 PAGES.forEach((page, i) => { for (const [key, action, settings] of page.keys) deck.add('g', `g___p${i}___${key}`, `${PLUGIN_UUID}.${action}`, settings, key); });
 
 const OUT = path.join(REPO, 'docs', 'images');

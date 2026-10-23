@@ -6,7 +6,7 @@ Thanks for helping! This is a small hobby project: issues and pull requests are 
 
 - **No organisation-specific data in code.** Company names, private repos, internal hostnames and URLs, tokens: these all belong in a local `.env`, which git ignores. Add new settings to `.env.example` with a comment, and read them through `src/env.js`.
 - **Keep hooks harmless.** Hook scripts must never block, print output, or change Claude Code's behaviour. They always exit 0, and they forward allowlisted metadata only.
-- **No new runtime dependencies** unless they're needed. The plugin runs on Ulanzi Studio's bundled Node 20.
+- **No new runtime dependencies** unless they're needed. The plugin runs on Ulanzi Studio's bundled Node (20.12.2 in Studio 3.4), so plugin code must keep working there; CI tests it.
 - **Match the surrounding style.** ES modules, small pure functions that are easy to unit-test, and SVG Tiny–compatible markup (Qt renders it, so no filters or CSS).
 
 ## Workflow

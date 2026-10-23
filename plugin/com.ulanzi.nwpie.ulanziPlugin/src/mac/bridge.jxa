@@ -1,0 +1,149 @@
+// JXA bridge for macOS, run as: osascript -l JavaScript bridge.jxa <cmd> [args...]
+// Prints one JSON line: {"ok":true,"data":...} or {"ok":false,"error":"..."}.
+// Windows/apps need Accessibility + Automation permission for Ulanzi Studio (macOS asks once).
+// Coordinates are global points with the origin at the top-left of the main screen (what System Events uses).
+ObjC.import('AppKit');
+ObjC.import('CoreGraphics');
+
+const SE = Application('System Events');
+const TERMINALS = ['iTerm2', 'Terminal', 'Ghostty', 'WezTerm', 'kitty', 'Alacritty', 'Warp'];
+
+function tryApp(name) {
+  try { const a = Application(name); return a.running() ? a : null; } catch (e) { return null; }
+}
+
+function screens() {
+  const list = $.NSScreen.screens.js;
+  if (!list.length) return [];
+  const H = list[0].frame.size.height; // Cocoa origin is bottom-left of the main screen
+  const conv = (r) => ({ x: Math.round(r.origin.x), y: Math.round(H - r.origin.y - r.size.height), w: Math.round(r.size.width), h: Math.round(r.size.height) });
+  return list.map((s) => ({ full: conv(s.frame), work: conv(s.visibleFrame) }));
+}
+
+function rectOf(w) { const p = w.position(), s = w.size(); return { x: p[0], y: p[1], w: s[0], h: s[1] }; }
+const near = (a, b) => a && b && ['x', 'y', 'w', 'h'].every(k => Math.abs(a[k] - b[k]) <= 2);
+
+/** The AX window for (pid, title), falling back to the one at `hint` (a rect), then the app's front window. */
+function axWindow(pid, title, hint) {
+  const ws = SE.processes.whose({ unixId: Number(pid) })[0].windows();
+  if (!ws.length) throw new Error('no window');
+  if (title) { const w = ws.find(x => { try { return x.name() === title; } catch (e) { return false; } }); if (w) return w; }
+  if (hint) { const w = ws.find(x => { try { return near(rectOf(x), hint); } catch (e) { return false; } }); if (w) return w; }
+  return ws[0];
+}
+const hintOf = (s) => (s ? JSON.parse(s) : null);
+
+const CMDS = {
+  screens,
+
+  front() {
+    const p = SE.processes.whose({ frontmost: true })[0];
+    const out = { pid: p.unixId(), app: p.name(), title: '', rect: null, screens: screens() };
+    let w = null;
+    try { w = p.attributes.byName('AXFocusedWindow').value(); } catch (e) { /* none */ }
+    if (!w) { const ws = p.windows(); w = ws.length ? ws[0] : null; }
+    if (w) { try { out.title = w.name() || ''; } catch (e) { /* untitled */ } out.rect = rectOf(w); }
+    return out;
+  },
+
+  rect(pid, title, hint) { return rectOf(axWindow(pid, title, hintOf(hint))); },
+
+  place(pid, title, hint, x, y, w, h) {
+    const win = axWindow(pid, title, hintOf(hint));
+    // position → size → position: apps clamp size against the screen the window is on.
+    win.position = [Number(x), Number(y)];
+    win.size = [Number(w), Number(h)];
+    win.position = [Number(x), Number(y)];
+    return rectOf(win);
+  },
+
+  raise(pid, title, hint) {
+    const win = axWindow(pid, title, hintOf(hint));
+    try { win.actions.byName('AXRaise').perform(); } catch (e) { /* app without AXRaise */ }
+    SE.processes.whose({ unixId: Number(pid) })[0].frontmost = true;
+    return true;
+  },
+
+  /** Normal on-screen windows, front to back (titles need Screen Recording permission; may be empty). */
+  windows() {
+    // kCGWindowListOptionOnScreenOnly | kCGWindowListExcludeDesktopElements, kCGNullWindowID
+    const info = ObjC.deepUnwrap(ObjC.castRefToObject($.CGWindowListCopyWindowInfo(1 | 16, 0))) || [];
+    return info
+      .filter(i => i.kCGWindowLayer === 0 && (i.kCGWindowAlpha ?? 1) > 0 && i.kCGWindowBounds && i.kCGWindowBounds.Width >= 100 && i.kCGWindowBounds.Height >= 60)
+      .map(i => ({ pid: i.kCGWindowOwnerPID, app: i.kCGWindowOwnerName || '', title: i.kCGWindowName || '',
+        rect: { x: i.kCGWindowBounds.X, y: i.kCGWindowBounds.Y, w: i.kCGWindowBounds.Width, h: i.kCGWindowBounds.Height } }));
+  },
+
+  /** Select the iTerm2 / Terminal tab whose tty is `tty` (e.g. ttys003). Returns the app name or ''. */
+  tty(tty) {
+    const dev = String(tty).startsWith('/dev/') ? String(tty) : `/dev/${tty}`;
+    const it = tryApp('iTerm2');
+    if (it) {
+      for (const w of it.windows()) for (const t of w.tabs()) for (const s of t.sessions()) {
+        if (s.tty() === dev) { s.select(); t.select(); w.select(); it.activate(); return 'iTerm2'; }
+      }
+    }
+    const te = tryApp('Terminal');
+    if (te) {
+      for (const w of te.windows()) for (const t of w.tabs()) {
+        if (t.tty() === dev) { w.selectedTab = t; w.index = 1; te.activate(); return 'Terminal'; }
+      }
+    }
+    return '';
+  },
+
+  /** Bring a running app to the front; with no name, the first running terminal app. */
+  activate(name) {
+    for (const n of name ? [name] : TERMINALS) { const a = tryApp(n); if (a) { a.activate(); return n; } }
+    return '';
+  },
+
+  /** Run a command in a new Terminal window (e.g. `gh auth login`). */
+  terminal(cmd) { const t = Application('Terminal'); t.doScript(cmd); t.activate(); return true; },
+
+  /** Now playing in Spotify or Music (the first one that is playing or paused). */
+  media() {
+    for (const name of ['Spotify', 'Music']) {
+      const a = tryApp(name);
+      if (!a) continue;
+      const st = String(a.playerState());
+      if (st !== 'playing' && st !== 'paused') continue;
+      const t = a.currentTrack();
+      const dur = Number(t.duration()) || 0;
+      let artUrl = null;
+      if (name === 'Spotify') { try { artUrl = t.artworkUrl(); } catch (e) { /* older Spotify */ } }
+      return { active: true, app: name, title: t.name(), artist: t.artist(), album: t.album(), status: st === 'playing' ? 'Playing' : 'Paused',
+        position: Number(a.playerPosition()) || 0, duration: name === 'Spotify' ? dur / 1000 : dur, artUrl };
+    }
+    return { active: false };
+  },
+
+  mediactl(what) {
+    for (const name of ['Spotify', 'Music']) {
+      const a = tryApp(name);
+      if (!a) continue;
+      if (what === 'playpause') a.playpause(); else if (what === 'next') a.nextTrack(); else if (what === 'prev') a.previousTrack();
+      return true;
+    }
+    return false;
+  },
+
+  volume() { const app = Application.currentApplication(); app.includeStandardAdditions = true; return app.getVolumeSettings(); },
+
+  setvolume(key, value) {
+    const app = Application.currentApplication();
+    app.includeStandardAdditions = true;
+    app.setVolume(null, { [key]: key === 'outputMuted' ? value === 'true' : Number(value) });
+    return app.getVolumeSettings();
+  },
+};
+
+function run(argv) {
+  const [cmd, ...args] = argv;
+  try {
+    if (!CMDS[cmd]) throw new Error(`unknown cmd ${cmd}`);
+    return JSON.stringify({ ok: true, data: CMDS[cmd](...args) ?? null });
+  } catch (e) {
+    return JSON.stringify({ ok: false, error: String(e && e.message || e) });
+  }
+}

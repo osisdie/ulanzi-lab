@@ -1,16 +1,14 @@
 // Actions for the extra pages (media, focus, hw, devops, prompt, target). deck.js delegates to this.
-import { execFile, spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import * as P from './render-pages.js';
 import { promptTargets, autoTarget, sendToSession } from './prompts.js';
+import { IS_WIN, IS_MAC, openUrl, openFolder, openSystemMonitor, startDocker } from './platform.js';
+import { osa } from './mac/osa.js';
 
 export const PAGE_ACTIONS = ['media', 'focus', 'hw', 'devops', 'prompt', 'target'];
 
-export function openUrl(url) {
-  execFile('rundll32.exe', ['url.dll,FileProtocolHandler', url], { windowsHide: true }, () => {});
-}
-
 const CHIME = 'C:\\Windows\\Media\\Alarm01.wav';
-const DOCKER = 'C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe';
+const DEFAULT_DISK = IS_WIN ? 'C:' : '/';
 
 export function createPageActions({ media, hw, devops, pomodoro, sessions, toast, chime = () => {}, log = () => {}, now = () => Date.now() }) {
   let pinnedTarget = null; // session id, or null = auto
@@ -37,7 +35,7 @@ export function createPageActions({ media, hw, devops, pomodoro, sessions, toast
     switch (k.action) {
       case 'media': return P.mediaKey(s.part || (wide ? 'wide' : 'art'), { media: media.media, audio: media.audio, art: media.art }, { now: t, position: media.position(t), wide });
       case 'focus': return P.focusKey(s.part || (wide ? 'wide' : 'timer'), pomodoro, { now: t, frame: tick, wide });
-      case 'hw': return P.hwKey(s.metric || (wide ? 'wide' : 'cpu'), hw.get(), { disk: s.disk || 'C:' });
+      case 'hw': return P.hwKey(s.metric || (wide ? 'wide' : 'cpu'), hw.get(), { disk: s.disk || DEFAULT_DISK });
       case 'devops': return P.devopsKey(s.kind || (wide ? 'wide' : 'cr-mine'), devops.get(), { phase, label: s.label, url: s.url, slot: Number(s.slot) || 0, repo: s.repo || process.env.ULANZI_LAB_ACTIONS_REPO || '', now: t });
       case 'prompt': return P.promptKey(s.label || s.text || s.keys || '?', { target: target(), icon: s.icon || '', hold: s.hold === true || s.hold === 'on', needsWaiting: s.needsWaiting === true || s.needsWaiting === 'on', flash: (flashUntil.get(ctx) || 0) > t });
       case 'target': return P.targetKey(target(), { auto: !pinnedTarget, count: promptTargets(sessions.list()).length, phase });
@@ -82,9 +80,9 @@ export function createPageActions({ media, hw, devops, pomodoro, sessions, toast
       }
       case 'hw': {
         const m = s.metric || 'cpu';
-        if (m === 'temps') return openUrl('http://127.0.0.1:8085/');
-        if (m === 'disk') return spawn('explorer.exe', [`${s.disk || 'C:'}\\`], { detached: true, stdio: 'ignore' }).unref();
-        return spawn('taskmgr.exe', [], { detached: true, stdio: 'ignore' }).unref();
+        if (m === 'temps' && IS_WIN) return openUrl('http://127.0.0.1:8085/');
+        if (m === 'disk') return openFolder(IS_WIN ? `${s.disk || 'C:'}\\` : s.disk || '/');
+        return openSystemMonitor();
       }
       case 'devops': {
         const kind = P.KIND_ALIASES[s.kind] || s.kind || (k.key === '3_2' ? 'wide' : 'cr-mine');
@@ -92,11 +90,12 @@ export function createPageActions({ media, hw, devops, pomodoro, sessions, toast
         const st = devops.get();
         const f = st.forge || {};
         const github = f.kind === 'github';
-        // Not logged in: the keys read through glab / gh inside WSL, so a browser login doesn't help.
-        // Open a WT tab running the CLI login; the provider re-polls every 15 s until it succeeds.
+        // Not logged in: the keys read through the glab / gh CLI (inside WSL on Windows), so a browser login doesn't help.
+        // Open a terminal running the CLI login; the provider re-polls every 15 s until it succeeds.
         if (/^(cr|mr)-/.test(kind) && (f.auth === false || (!f.auth && f.error))) {
           const cli = github ? `gh auth login --hostname ${f.host || 'github.com'}` : f.host ? `glab auth login --hostname ${f.host}` : 'glab auth login';
-          toast(`Run ${github ? 'gh' : 'glab'} auth login in the new terminal tab`);
+          toast(`Run ${github ? 'gh' : 'glab'} auth login in the new terminal ${IS_WIN ? 'tab' : 'window'}`);
+          if (IS_MAC) return osa('terminal', cli);
           return spawn('wt.exe', ['-w', '0', 'nt', '--title', 'forge login', 'wsl.exe', '-d', devops.distro, '-e', 'bash', '-lc', `${cli} || read -rp "Press Enter to close"`],
             { detached: true, stdio: 'ignore' }).on('error', () => toast('wt.exe not found')).unref();
         }
@@ -118,7 +117,7 @@ export function createPageActions({ media, hw, devops, pomodoro, sessions, toast
         }
         if (kind === 'http') return s.url && openUrl(s.url);
         if (kind === 'docker') {
-          if (!st.docker?.up) { toast('Starting Docker Desktop…'); return spawn(DOCKER, [], { detached: true, stdio: 'ignore' }).on('error', () => toast('Docker Desktop not found')).unref(); }
+          if (!st.docker?.up) { toast('Starting Docker Desktop…'); return startDocker(() => toast('Docker Desktop not found')); }
           return;
         }
         return urls[kind] && openUrl(urls[kind]);

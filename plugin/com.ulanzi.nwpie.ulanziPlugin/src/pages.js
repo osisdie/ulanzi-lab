@@ -1,6 +1,7 @@
 // Default D200X pages (keys are "col_row"; 3_2 is the 2-column wide key; 0_3/1_3 are the page buttons).
 // Shared by the browser preview (runtime.js) and the profile generator (scripts/make-profile.mjs).
 // Per-machine choices come from .env (see .env.example): forge, home row, watchlist, HTTP checks, Actions repo.
+// macOS has no WSL: those keys become Docker / System Health, and the disk key shows the root volume.
 import { env, envList } from './env.js';
 
 export const PLUGIN_UUID = 'com.ulanzi.ulanzistudio.nwpie';
@@ -13,7 +14,8 @@ const strip = (items) => { const pairs = items.map(symLabel); return ['stock', {
 /** "url|label" → http check settings. */
 const http = (spec) => { const [url, label] = spec.split('|').map(s => s.trim()); return ['devops', { kind: 'http', url, label: label || '' }]; };
 
-export function buildPages() {
+export function buildPages({ platform = process.platform } = {}) {
+  const win = platform === 'win32';
   const forge = env('ULANZI_LAB_FORGE', 'auto').toLowerCase();
   const word = forge === 'github' ? 'PR' : forge === 'gitlab' ? 'MR' : 'Review';
 
@@ -21,6 +23,7 @@ export function buildPages() {
   const checks = envList('ULANZI_LAB_HTTP_CHECKS').map(http);
   if (!checks.length) checks.push(['devops', { kind: 'http', url: 'https://api.anthropic.com/', label: 'Anthropic API' }]);
   const ciKey = forge === 'github' ? ['devops', { kind: 'gh-actions', repo: env('ULANZI_LAB_ACTIONS_REPO') }] : ['devops', { kind: 'mr-ci' }];
+  const wsl = (other) => (win ? ['wsl', {}] : other);
 
   const pages = [
     {
@@ -28,7 +31,7 @@ export function buildPages() {
       name: 'Claude',
       keys: [
         ['0_0', 'session', { slot: 1 }], ['1_0', 'session', { slot: 2 }], ['2_0', 'session', { slot: 3 }], ['3_0', 'session', { slot: 4 }], ['4_0', 'hitl', { nag: 'off', theme: 'classic', style: 'mascot' }],
-        ['0_1', 'usage', { window: '5h' }], ['1_1', 'usage', { window: '7d' }], ['2_1', 'sys', {}], ['3_1', 'wsl', {}], ['4_1', 'iot', { device: 'mock.lamp' }],
+        ['0_1', 'usage', { window: '5h' }], ['1_1', 'usage', { window: '7d' }], ['2_1', 'sys', {}], ['3_1', ...wsl(['devops', { kind: 'docker' }])], ['4_1', 'iot', { device: 'mock.lamp' }],
         ['0_2', 'focus', { part: 'timer' }], ['1_2', 'focus', { part: 'count' }], ['2_2', ...ciKey], ['3_2', 'usage', { window: 'wide' }],
       ],
     },
@@ -83,7 +86,7 @@ export function buildPages() {
       name: 'Hardware',
       keys: [
         ['0_0', 'hw', { metric: 'cpu' }], ['1_0', 'hw', { metric: 'cores' }], ['2_0', 'hw', { metric: 'ram' }], ['3_0', 'hw', { metric: 'gpu' }], ['4_0', 'hitl', { style: 'mascot' }],
-        ['0_1', 'hw', { metric: 'vram' }], ['1_1', 'hw', { metric: 'disk', disk: 'C:' }], ['2_1', 'wsl', {}], ['3_1', 'hw', { metric: 'netdown' }], ['4_1', 'hw', { metric: 'netup' }],
+        ['0_1', 'hw', { metric: 'vram' }], ['1_1', 'hw', { metric: 'disk', disk: win ? 'C:' : '/' }], ['2_1', ...wsl(['sys', {}])], ['3_1', 'hw', { metric: 'netdown' }], ['4_1', 'hw', { metric: 'netup' }],
         ['0_2', 'hw', { metric: 'diskio' }], ['1_2', 'hw', { metric: 'uptime' }], ['2_2', 'hw', { metric: 'temps' }], ['3_2', 'hw', { metric: 'wide' }],
       ],
     },
@@ -93,7 +96,7 @@ export function buildPages() {
         ['0_0', 'devops', { kind: 'cr-mine' }], ['1_0', 'devops', { kind: 'cr-reviews' }], ['2_0', 'devops', { kind: 'status-claude' }],
         ['3_0', 'devops', { kind: 'docker' }], ['4_0', 'hitl', { style: 'mascot' }],
         ['0_1', 'devops', { kind: 'n8n' }], ['1_1', ...checks[0]], ['2_1', ...ciKey], ['3_1', 'usage', { window: '5h' }], ['4_1', 'usage', { window: '7d' }],
-        ['0_2', ...(checks[1] || ['wsl', {}])], ['1_2', 'devops', { kind: 'status-github' }], ['2_2', 'hw', { metric: 'cpu' }],
+        ['0_2', ...(checks[1] || wsl(['hw', { metric: 'ram' }]))], ['1_2', 'devops', { kind: 'status-github' }], ['2_2', 'hw', { metric: 'cpu' }],
         ['3_2', 'devops', { kind: 'wide' }],
       ],
     },

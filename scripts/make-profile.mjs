@@ -7,21 +7,25 @@
 // --layout <module> builds another plugin's profile instead.
 // A layout module exports PROFILE = { name, icon, pages, plugin: { uuid, name, folder, src, actionNames, iconFor(action) } }.
 //
-// - Writes a NEW profile folder into %APPDATA%\Ulanzi\UlanziDeck\ProfilesV2 (existing profiles untouched).
+// - Writes a NEW profile folder into %APPDATA%\Ulanzi\UlanziDeck\ProfilesV2 (macOS: ~/Library/Application Support/
+//   Ulanzi/UlanziDeck/ProfilesV2); existing profiles are untouched.
 //   Re-running replaces only the profile this script generated under the same name (marked with .ulanzi-lab).
 // - Ulanzi Studio is stopped while writing and restarted afterwards (it caches profiles in memory).
 // - --activate also sets it as the current profile in Config\setting.json (the first backup is kept).
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { execFileSync, spawn } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const has = (f) => process.argv.includes(f);
-const ROOT = path.join(process.env.APPDATA, 'Ulanzi', 'UlanziDeck');
+const MAC = process.platform === 'darwin';
+const ROOT = MAC ? path.join(os.homedir(), 'Library', 'Application Support', 'Ulanzi', 'UlanziDeck') : path.join(process.env.APPDATA, 'Ulanzi', 'UlanziDeck');
 const PROFILES = path.join(ROOT, 'ProfilesV2');
 const SETTING = path.join(ROOT, 'Config', 'setting.json');
 const EXE = 'C:\\Program Files (x86)\\Ulanzi Studio\\UlanziDeck.exe';
+const MAC_APP = '/Applications/Ulanzi Studio.app';
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MARKER = '.ulanzi-lab';
 const LEGACY = { name: 'ulanzi_lab', marker: '.ulanzi_lab' }; // pre-rename profile, replaced in place
@@ -51,12 +55,25 @@ const ref = manifests.find(x => x.m.Device?.Model === 'D200X');
 if (!ref) throw new Error('no existing D200X profile to copy the device identity from');
 const device = ref.m.Device;
 
+/** First folder named `name` under `dir` (shallow search), or null. */
+function findDir(dir, name, depth = 5) {
+  if (depth < 0) return null;
+  let entries = [];
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return null; }
+  for (const e of entries) if (e.isDirectory() && e.name === name) return path.join(dir, e.name);
+  for (const e of entries) if (e.isDirectory()) { const hit = findDir(path.join(dir, e.name), name, depth - 1); if (hit) return hit; }
+  return null;
+}
+// Ulanzi's built-in Pages plugin: under the data folder on Windows, possibly inside the app bundle on macOS.
+const PAGE_PLUGIN = [path.join(ROOT, 'System', 'Plugins', 'com.ulanzi.deck.page')].find(d => fs.existsSync(d))
+  || (MAC && findDir(path.join(MAC_APP, 'Contents'), 'com.ulanzi.deck.page')) || path.join(ROOT, 'System', 'Plugins', 'com.ulanzi.deck.page');
+
 // Page-button entries (0_3 / 1_3) copied from Ulanzi's own Pages plugin.
 const pageButton = (action, img) => ({
   Action: `com.ulanzi.ulanzideck.page.${action}`, ActionID: crypto.randomUUID(), ActionParam: {}, LinkedTitle: true,
   Name: action === 'prev' ? 'Previous Page' : 'Next Page',
   Plugin: { Name: 'Pages', UUID: 'com.ulanzi.deck.page', Version: '1.0' },
-  ViewParam: [{ Icon: fwd(path.join(ROOT, 'System', 'Plugins', 'com.ulanzi.deck.page', 'Images', img)), IconRel: '' }],
+  ViewParam: [{ Icon: fwd(path.join(PAGE_PLUGIN, 'Images', img)), IconRel: '' }],
 });
 
 const action = (name, settings) => ({
@@ -91,11 +108,23 @@ if (has('--dry-run')) {
   process.exit(0);
 }
 
-const running = () => { try { return execFileSync('tasklist', ['/FI', 'IMAGENAME eq UlanziDeck.exe', '/NH']).toString().includes('UlanziDeck.exe'); } catch { return false; } };
+const running = () => {
+  try {
+    if (MAC) { execFileSync('pgrep', ['-f', `${MAC_APP}/Contents/MacOS/`], { stdio: 'ignore' }); return true; } // exit 1 = not running
+    return execFileSync('tasklist', ['/FI', 'IMAGENAME eq UlanziDeck.exe', '/NH']).toString().includes('UlanziDeck.exe');
+  } catch { return false; }
+};
+const pause = () => (MAC ? execFileSync('sleep', ['0.25']) : execFileSync('powershell', ['-NoProfile', '-c', 'Start-Sleep -Milliseconds 250']));
 const wasRunning = running();
 if (wasRunning) {
-  execFileSync('taskkill', ['/IM', 'UlanziDeck.exe', '/F'], { stdio: 'ignore' });
-  for (let i = 0; i < 20 && running(); i++) execFileSync('powershell', ['-NoProfile', '-c', 'Start-Sleep -Milliseconds 250']);
+  if (MAC) {
+    try { execFileSync('osascript', ['-e', 'quit app "Ulanzi Studio"'], { stdio: 'ignore', timeout: 10e3 }); } catch { /* not scriptable: killed below */ }
+    for (let i = 0; i < 20 && running(); i++) pause();
+    if (running()) try { execFileSync('pkill', ['-f', `${MAC_APP}/Contents/MacOS/`], { stdio: 'ignore' }); } catch { /* exited meanwhile */ }
+  } else {
+    execFileSync('taskkill', ['/IM', 'UlanziDeck.exe', '/F'], { stdio: 'ignore' });
+  }
+  for (let i = 0; i < 20 && running(); i++) pause();
 }
 
 if (prev) fs.rmSync(dir, { recursive: true, force: true });
@@ -121,6 +150,7 @@ if (has('--activate')) {
 }
 
 if (wasRunning && !has('--no-restart')) {
-  spawn(EXE, [], { detached: true, stdio: 'ignore' }).unref();
+  if (MAC) spawn('open', ['-a', MAC_APP], { detached: true, stdio: 'ignore' }).unref();
+  else spawn(EXE, [], { detached: true, stdio: 'ignore' }).unref();
   console.log('Ulanzi Studio restarted');
 }

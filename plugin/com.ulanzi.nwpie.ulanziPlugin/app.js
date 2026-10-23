@@ -1,42 +1,29 @@
-// ulanzi-lab plugin main service (started by Ulanzi Studio with: node app.js <address> <port> <language> <appVersion>).
-import './src/env.js'; // load .env before any module reads process.env
-import UlanziApi from './libs/ulanzi-api/index.js';
+// ulanzi-lab plugin entry (started by Ulanzi Studio with: node app.js <address> <port> <language> <appVersion>).
+// Studio's bundled Node may lack security fixes. Then, if a patched Node is installed, this process only
+// supervises a child that runs this same file on it (see src/supervisor.js); otherwise the plugin runs here.
+// ULANZI_LAB_NODE=<path> picks the Node; ULANZI_LAB_NODE=bundled always runs on Studio's.
+import './src/env.js';
+import { fileURLToPath } from 'node:url';
 import { log } from './src/log.js';
-import { createRuntime } from './src/runtime.js';
+import { nodeProblem } from './src/node-floor.js';
+import { findPatchedNode, supervise } from './src/supervisor.js';
 
-const UUID = 'com.ulanzi.ulanzistudio.nwpie';
-log('plugin start', process.version, process.argv.slice(2));
-// Ulanzi Studio closes our stdout when it quits; the SDK still console.logs. Exit quietly instead of EPIPE spam.
-for (const stream of [process.stdout, process.stderr]) stream.on('error', (e) => { if (e.code === 'EPIPE') process.exit(0); });
-process.on('uncaughtException', (e) => log('uncaughtException', e.stack));
-process.on('unhandledRejection', (e) => log('unhandledRejection', String(e?.stack || e)));
+// In the supervised child: stop as soon as the parent (Studio's process) is gone, even before main.js has loaded.
+// The marker is removed so programs the plugin starts (terminals, gh/glab, Studio itself) don't inherit it.
+const supervised = process.env.ULANZI_LAB_SUPERVISED === '1';
+delete process.env.ULANZI_LAB_SUPERVISED;
+if (supervised) {
+  if (!process.connected) { log('supervised start without a parent channel; exiting'); process.exit(0); }
+  process.on('disconnect', () => process.exit(0));
+}
 
-const rt = createRuntime();
-const $UD = new UlanziApi();
-
-rt.deck.addSink('ulanzi', {
-  setIcon: (ctx, dataUrl) => $UD.setBaseDataIcon(ctx, dataUrl),
-  toast: (msg) => $UD.toast(msg),
-  saveSettings: (ctx, settings) => $UD.sendParamFromPlugin(settings, ctx),
-});
-
-const settingsOf = (m) => (m && typeof m.param === 'object' && m.param) || {};
-const lastUp = new Map();
-
-$UD.connect(UUID);
-$UD.onConnected(() => { log('connected to Ulanzi Studio'); rt.deck.renderAll(true); });
-$UD.onClose(() => log('ws closed'));
-$UD.onAdd((m) => { log('add', m.uuid, m.key, m.param); rt.deck.add('ulanzi', m.context, m.uuid, settingsOf(m), m.key); });
-$UD.onParamFromApp((m) => rt.deck.update(m.context, settingsOf(m)));
-$UD.onParamFromPlugin((m) => rt.deck.update(m.context, settingsOf(m)));
-$UD.onSetActive((m) => { log('setactive', m.key, m.active); rt.deck.setActive(m.context, m.active); });
-$UD.onClear((m) => { for (const p of m.param || []) rt.deck.remove(p.context); });
-
-// keydown/keyup give us long-press; 'run' is only used if the host sends it without a keyup.
-$UD.onKeyDown((m) => rt.deck.keyDown(m.context));
-$UD.onKeyUp((m) => { lastUp.set(m.context, Date.now()); rt.deck.keyUp(m.context); });
-$UD.onRun((m) => {
-  setTimeout(() => {
-    if (Date.now() - (lastUp.get(m.context) || 0) > 1500) rt.deck.pressNow(m.context, false);
-  }, 300);
-});
+const wantChild = nodeProblem() && !supervised && process.env.ULANZI_LAB_NODE !== 'bundled';
+const node = wantChild ? findPatchedNode({ log }) : null;
+if (node) {
+  log('plugin start', process.version, `(Studio's Node) → running the plugin on ${node.version}`);
+  // argv[1] must stay this file: the Ulanzi SDK finds the plugin folder from it.
+  const ok = await supervise(node, process.argv[1] || fileURLToPath(import.meta.url), process.argv.slice(2), { log });
+  if (!ok) log(`supervisor: ${node.file} keeps failing; running the plugin on Studio's Node instead`);
+}
+// Reached when no patched Node is needed or found, inside the child, or after the child kept failing.
+await import('./src/main.js');

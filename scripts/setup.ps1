@@ -32,7 +32,10 @@ else { Warn 'no .env: using defaults (copy .env.example to .env, or pass -EnvPro
 
 Step 'Prerequisites'
 $node = Get-Command node -ErrorAction SilentlyContinue
-if ($node) { Good "node $(node -v)" } else { Fail 'Node.js not found (winget install OpenJS.NodeJS.LTS)'; }
+if ($node) {
+    $why = node (Join-Path $repo 'plugin\com.ulanzi.nwpie.ulanziPlugin\src\node-floor.js') 2>&1 | Out-String
+    if ($LASTEXITCODE -eq 0) { Good "node $(node -v)" } else { Fail "$($why.Trim()) (winget upgrade OpenJS.NodeJS.LTS)" }
+} else { Fail 'Node.js not found (winget install OpenJS.NodeJS.LTS)'; }
 if (Test-Path $ulanziExe) { Good 'Ulanzi Studio installed' } else { Fail "Ulanzi Studio not found at $ulanziExe (install from ulanzi.com)" }
 
 $wslList = (wsl.exe -l -v | Out-String) -replace "`0", ''
@@ -72,7 +75,7 @@ Step 'Link plugin(s) into Ulanzi Studio'
 if (-not $SkipHooks -and $Distro) {
     Step 'Claude Code hooks in WSL'
     $wslRepo = (wsl.exe -d $Distro -e wslpath -a ($repo -replace '\\', '/')).Trim()
-    wsl.exe @wsl "cd '$wslRepo' && bash scripts/install-wsl-hooks.sh" | Out-Host
+    wsl.exe @wsl "cd '$wslRepo' && bash scripts/install-hooks.sh" | Out-Host
 }
 
 Step 'Ulanzi Studio profile'

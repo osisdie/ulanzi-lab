@@ -1,6 +1,6 @@
-// Claude command pad: type text / keys into a Claude Code session's tmux pane (WSL).
+// Claude command pad: type text / keys into a Claude Code session's tmux pane (in WSL on Windows, local on macOS).
 // Sessions outside tmux are refused: typing into "whatever window is in front" is how the wrong thing gets approved.
-import { execFile } from 'node:child_process';
+import { hostShell } from './platform.js';
 
 const q = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`;
 const TMUX_KEYS = new Set(['Enter', 'Escape', 'Up', 'Down', 'Left', 'Right', 'Tab', 'BTab', 'C-c', '1', '2', '3']);
@@ -28,16 +28,12 @@ export function tmuxScript(focus, { text = '', keys = [], enter = false } = {}) 
   return parts.join(' && ');
 }
 
-export function sendToSession(session, payload, { log = () => {} } = {}) {
-  return new Promise((resolve) => {
-    const f = session?.focus || {};
-    if (!f.tmux_pane || !f.tmux) return resolve({ ok: false, error: 'session is not in tmux' });
-    const sh = tmuxScript(f, payload);
-    if (!sh) return resolve({ ok: false, error: 'nothing to send' });
-    const args = f.distro ? ['-d', f.distro, '-e', 'sh', '-c', sh] : ['-e', 'sh', '-c', sh];
-    execFile('wsl.exe', args, { timeout: 5000, windowsHide: true }, (err, _o, stderr) => {
-      log('prompt.send', session.project, f.tmux_pane, payload.text || payload.keys, err ? String(stderr || err.message).trim() : 'ok');
-      resolve({ ok: !err, error: err ? String(stderr || err.message).trim() : null });
-    });
-  });
+export async function sendToSession(session, payload, { log = () => {} } = {}) {
+  const f = session?.focus || {};
+  if (!f.tmux_pane || !f.tmux) return { ok: false, error: 'session is not in tmux' };
+  const sh = tmuxScript(f, payload);
+  if (!sh) return { ok: false, error: 'nothing to send' };
+  const r = await hostShell(sh, { distro: f.distro || null });
+  log('prompt.send', session.project, f.tmux_pane, payload.text || payload.keys, r.ok ? 'ok' : r.err.trim());
+  return { ok: r.ok, error: r.ok ? null : r.err.trim() };
 }

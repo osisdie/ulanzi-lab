@@ -1,5 +1,6 @@
 // Hardware monitor: per-core CPU, RAM, GPU (perf counters, any vendor), VRAM, disks, network, disk IO,
-// uptime; temperatures/fans from LibreHardwareMonitor's web server when it is running (:8085).
+// uptime; temperatures/fans from LibreHardwareMonitor's web server when it is running (:8085, Windows).
+// GPU/network/disk-IO come from the OS helper (winhelper.ps1 on Windows, mac/helper.js on macOS).
 import os from 'node:os';
 import fs from 'node:fs';
 import { EventEmitter } from 'node:events';
@@ -51,13 +52,14 @@ export class HwProvider extends EventEmitter {
 
   async disks() {
     const out = [];
-    for (const letter of 'CDEFGH') {
-      const root = `${letter}:\\`;
+    // Drive letters on Windows; the root volume elsewhere (APFS reports the shared container's space).
+    const roots = process.platform === 'win32' ? [...'CDEFGH'].map(l => [`${l}:\\`, `${l}:`]) : [['/', '/']];
+    for (const [root, name] of roots) {
       if (!fs.existsSync(root)) continue;
       try {
         const s = await fs.promises.statfs(root);
         const total = s.blocks * s.bsize, free = s.bavail * s.bsize;
-        if (total > 0) out.push({ name: `${letter}:`, total, used: total - free, pct: ((total - free) / total) * 100 });
+        if (total > 0) out.push({ name, total, used: total - free, pct: ((total - free) / total) * 100 });
       } catch { /* not ready (card reader, DVD) */ }
     }
     return out;

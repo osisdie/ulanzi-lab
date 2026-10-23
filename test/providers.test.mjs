@@ -80,6 +80,16 @@ test('usage store keeps rate limits, drops expired windows', () => {
   assert.equal(u.seven_day.used_percentage, 10);
 });
 
+import { nodeProblem } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/node-floor.js';
+
+test('node security floor: EOL lines and unpatched releases are flagged', () => {
+  assert.match(nodeProblem('v20.12.2'), /end of life/);
+  assert.match(nodeProblem('v23.11.0'), /end of life/);
+  assert.match(nodeProblem('v22.23.3'), /need 22\.23\.4/);
+  assert.match(nodeProblem('v24.21.9'), /need 24\.22\.1/);
+  for (const ok of ['v22.23.4', 'v22.24.0', 'v24.22.1', 'v26.12.1', 'v28.0.0']) assert.equal(nodeProblem(ok), null, ok);
+});
+
 import { toCandles, downsample } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/providers/quotes.js';
 import { burnRate } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/usage.js';
 

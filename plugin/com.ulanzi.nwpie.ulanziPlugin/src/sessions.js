@@ -20,7 +20,7 @@ export const HOOK_FIELDS = [
   'session_id', 'hook_event_name', 'notification_type', 'cwd', 'tool_name', 'tool_use_id',
   'permission_mode', 'source', 'reason', 'model', 'agent_type', 'session_title', 'ts', 'focus',
 ];
-const FOCUS_FIELDS = ['src', 'distro', 'tmux_pane', 'tmux', 'term', 'wt_session', 'pid', 'host'];
+const FOCUS_FIELDS = ['src', 'distro', 'tmux_pane', 'tmux', 'term', 'wt_session', 'pid', 'tty', 'host'];
 
 export function sanitizeHookEvent(raw) {
   const out = {};

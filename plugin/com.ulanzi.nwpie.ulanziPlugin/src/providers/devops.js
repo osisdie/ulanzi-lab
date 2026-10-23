@@ -1,10 +1,12 @@
 // DevOps / automation monitor. Code review comes from one "forge", chosen per machine:
-//   GitLab (glab in WSL, self-hosted hosts supported) or GitHub (gh in WSL, GitHub Enterprise via host)
+//   GitLab (glab, self-hosted hosts supported) or GitHub (gh, GitHub Enterprise via host); the CLIs run in WSL
+//   on Windows and locally on macOS.
 // Both feed the same shapes: my PRs/MRs, review requests, and the review board (every open PR/MR in scope,
 // CI + conflicts + staleness, per repo). Plus GitHub Actions, status pages, HTTP checks, Docker, n8n.
 // Settings: ULANZI_LAB_FORGE (auto|gitlab|github), ULANZI_LAB_GITLAB_HOST, ULANZI_LAB_GITHUB_HOST,
 // ULANZI_LAB_BOARD_SCOPE (GitHub search qualifiers), ULANZI_LAB_ACTIONS_REPO — see .env.example.
 import { execFile } from 'node:child_process';
+import { hostShell } from '../platform.js';
 import { EventEmitter } from 'node:events';
 import { env } from '../env.js';
 
@@ -117,7 +119,7 @@ export function parseDocker(text) {
 const q1 = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`;
 
 export class DevopsProvider extends EventEmitter {
-  constructor({ distro = 'Ubuntu', log = () => {} } = {}) {
+  constructor({ distro = null, log = () => {} } = {}) {
     super();
     this.distro = distro;
     this.log = log;
@@ -133,20 +135,18 @@ export class DevopsProvider extends EventEmitter {
     this.timers = [];
   }
 
-  wsl(cmd, timeout = 20000) {
-    return new Promise((resolve) => {
-      execFile('wsl.exe', ['-d', this.distro, '-e', 'bash', '-lc', cmd], { timeout, windowsHide: true, maxBuffer: 16 * 1024 * 1024 },
-        (err, stdout, stderr) => resolve({ ok: !err, out: String(stdout || ''), err: String(stderr || err?.message || '') }));
-    });
+  /** Run a gh / glab command line in a login shell where they are installed (WSL on Windows, locally on macOS). */
+  cli(cmd, timeout = 20000) {
+    return hostShell(cmd, { distro: this.distro, login: true, timeout, maxBuffer: 16 * 1024 * 1024 });
   }
 
   /** Which forge this machine uses: ULANZI_LAB_FORGE, else whichever CLI is logged in (GitLab first). */
   async forgeKind() {
     if (this.want === 'gitlab' || this.want === 'github') return this.want;
     if (this._auto) return this._auto;
-    const gl = glabHost((await this.wsl('command -v glab >/dev/null && glab auth status 2>&1')).out);
+    const gl = glabHost((await this.cli('command -v glab >/dev/null && glab auth status 2>&1')).out);
     if (gl) return (this._auto = 'gitlab');
-    const gh = await this.wsl(`command -v gh >/dev/null && gh auth status --hostname ${q1(this.ghHost)} 2>&1`);
+    const gh = await this.cli(`command -v gh >/dev/null && gh auth status --hostname ${q1(this.ghHost)} 2>&1`);
     if (/Logged in to/i.test(gh.out)) return (this._auto = 'github');
     return 'gitlab'; // nothing logged in: show the GitLab login hint (set ULANZI_LAB_FORGE=github to change)
   }
@@ -157,9 +157,9 @@ export class DevopsProvider extends EventEmitter {
   }
 
   async gitlab() {
-    const host = this.glHost || glabHost((await this.wsl('glab auth status 2>&1')).out);
+    const host = this.glHost || glabHost((await this.cli('glab auth status 2>&1')).out);
     if (!host) { this.s.forge = { kind: 'gitlab', auth: false, error: 'glab: not logged in (glab auth login)', at: Date.now() }; return; }
-    const api = (q) => this.wsl(`glab api --hostname ${q1(host)} ${q1(q)}`);
+    const api = (q) => this.cli(`glab api --hostname ${q1(host)} ${q1(q)}`);
     const user = await api('user');
     let me;
     try { me = JSON.parse(user.out); } catch { me = null; }
@@ -190,7 +190,7 @@ export class DevopsProvider extends EventEmitter {
 
   async github() {
     const host = this.ghHost;
-    const gql = (query, vars = {}) => this.wsl(`gh api graphql --hostname ${q1(host)} -f query=${q1(query)} ${Object.entries(vars).map(([k, v]) => `-f ${k}=${q1(v)}`).join(' ')}`);
+    const gql = (query, vars = {}) => this.cli(`gh api graphql --hostname ${q1(host)} -f query=${q1(query)} ${Object.entries(vars).map(([k, v]) => `-f ${k}=${q1(v)}`).join(' ')}`);
     const r = await gql(GH_MINE);
     let mine = null;
     try { mine = parseGithubMine(JSON.parse(r.out)); } catch { /* not logged in / offline */ }
@@ -212,7 +212,7 @@ export class DevopsProvider extends EventEmitter {
     const repos = new Set([...this.repos.keys(), ...Object.keys(this.s.actions)]);
     for (const repo of repos) {
       if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) continue;
-      const r = await this.wsl(`gh api --hostname ${q1(this.ghHost)} ${q1(`repos/${repo}/actions/runs?per_page=5`)}`);
+      const r = await this.cli(`gh api --hostname ${q1(this.ghHost)} ${q1(`repos/${repo}/actions/runs?per_page=5`)}`);
       try {
         const runs = JSON.parse(r.out).workflow_runs || [];
         this.s.actions[repo] = { runs: runs.map(x => ({ name: x.name, status: x.status, conclusion: x.conclusion, branch: x.head_branch, url: x.html_url, at: x.created_at })), at: Date.now() };
