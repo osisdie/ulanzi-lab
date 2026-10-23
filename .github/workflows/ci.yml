@@ -11,7 +11,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node: [22, 24]   # supported LTS lines
+        node: [22, 24]   # supported LTS lines, latest patch (check-latest)
         include:
           # Ulanzi Studio 3.4 runs plugins on its own bundled Node 20.12.2 (end of life): keep the plugin working there.
           - { os: windows-latest, node: 20.12.2 }
@@ -21,6 +21,10 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node }}
+          check-latest: true
+      - name: Node has current security fixes (not for the Studio-compat 20.12.2 jobs)
+        if: matrix.node != '20.12.2'
+        run: node plugin/com.ulanzi.nwpie.ulanziPlugin/src/node-floor.js
       - run: npm install --no-audit --no-fund
       - name: Unit tests (on macOS this also runs the JXA bridge through osascript)
         run: npm test
@@ -38,6 +42,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+          check-latest: true
       - run: npm install --no-audit --no-fund
       - uses: Vampire/setup-wsl@v7
         with:

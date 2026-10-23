@@ -38,7 +38,7 @@ Ulanzi Studio ─spawns→ plugin app.js = hub + deck driver
 
 **Prerequisites**
 
-- Node.js 22 or newer (an LTS release).
+- Node.js 22.23.4+ or 24.22.1+ (LTS with the October 2026 security fixes).
 - Ulanzi Studio. Connect the D200X and open Studio once, so it creates a "Default Profile".
 - WSL2 with `jq` and `curl`.
 - Optional:
@@ -95,7 +95,7 @@ After pulling updates, re-run `scripts\setup.ps1`. Your `.env` is kept, so the d
 
 **Prerequisites**
 
-- macOS 12 or newer and Node.js 22 or newer (an LTS release).
+- macOS 12 or newer and Node.js 22.23.4+ or 24.22.1+ (LTS with the October 2026 security fixes).
 - Ulanzi Studio for Mac. Connect the D200X and open Studio once, so it creates a "Default Profile".
 - `jq` and `curl` (`brew install jq`).
 - Optional:
@@ -282,7 +282,7 @@ Re-renders the README screenshots in `docs/images/` from demo data. It needs Chr
 - **Windows Terminal.** It can't focus a tab by id, so tab focus is a best-effort title match. tmux and VS Code focus are exact.
 - **Elevated windows.** The plugin isn't elevated, so it can't move them.
 - **Port.** The hub uses port 39300 because some machines reserve the 45000–48000 range.
-- **Node inside Ulanzi Studio.** Studio 3.4 for Windows runs plugins on its own bundled Node 20.12.2 (check the Mac build's with the `plugin start` line in the log), which is past end of life and gets no security fixes. The plugin can't choose its runtime; update Ulanzi Studio when a newer build ships. Meanwhile the hub only listens on `127.0.0.1` and accepts JSON posts only. The plugin logs a warning at start while it runs on an unsupported Node. Your own Node (tools, `npm run dev`, CI) should be 22 or newer.
+- **Node inside Ulanzi Studio.** Studio 3.4 for Windows runs plugins on its own bundled Node 20.12.2 (check the Mac build's with the `plugin start` line in the log), which is past end of life and gets no security fixes. The plugin can't choose its runtime; update Ulanzi Studio when a newer build ships. Meanwhile the hub only listens on `127.0.0.1` and accepts JSON posts only. The plugin logs a warning at start while it runs on a Node without current security fixes. Your own Node (tools, `npm run dev`, CI) must have them: the minimum per release line is in [src/node-floor.js](plugin/com.ulanzi.nwpie.ulanziPlugin/src/node-floor.js), which the setup scripts and CI check.
 
 ## Uninstall
 

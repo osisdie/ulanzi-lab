@@ -3,11 +3,13 @@ import './src/env.js'; // load .env before any module reads process.env
 import UlanziApi from './libs/ulanzi-api/index.js';
 import { log } from './src/log.js';
 import { createRuntime } from './src/runtime.js';
+import { nodeProblem } from './src/node-floor.js';
 
 const UUID = 'com.ulanzi.ulanzistudio.nwpie';
 log('plugin start', process.version, process.argv.slice(2));
-// Studio runs us on its bundled Node; below the oldest supported LTS line it gets no security fixes.
-if (Number(process.versions.node.split('.')[0]) < 22) log(`warning: Node ${process.version} is past end of life (no security fixes); update Ulanzi Studio when a newer build ships`);
+// Studio runs us on its bundled Node, which may lack security fixes (Studio 3.4: 20.12.2, end of life).
+const nodeIssue = nodeProblem();
+if (nodeIssue) log(`warning: ${nodeIssue}; update Ulanzi Studio when a newer build ships`);
 // Ulanzi Studio closes our stdout when it quits; the SDK still console.logs. Exit quietly instead of EPIPE spam.
 for (const stream of [process.stdout, process.stderr]) stream.on('error', (e) => { if (e.code === 'EPIPE') process.exit(0); });
 process.on('uncaughtException', (e) => log('uncaughtException', e.stack));

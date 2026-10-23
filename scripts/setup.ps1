@@ -33,8 +33,8 @@ else { Warn 'no .env: using defaults (copy .env.example to .env, or pass -EnvPro
 Step 'Prerequisites'
 $node = Get-Command node -ErrorAction SilentlyContinue
 if ($node) {
-    $major = [int]((node -v) -replace '^v(\d+).*', '$1')
-    if ($major -ge 22) { Good "node $(node -v)" } else { Fail "node $(node -v) is past end of life (need 22+: winget upgrade OpenJS.NodeJS.LTS)" }
+    $why = node (Join-Path $repo 'plugin\com.ulanzi.nwpie.ulanziPlugin\src\node-floor.js') 2>&1 | Out-String
+    if ($LASTEXITCODE -eq 0) { Good "node $(node -v)" } else { Fail "$($why.Trim()) (winget upgrade OpenJS.NodeJS.LTS)" }
 } else { Fail 'Node.js not found (winget install OpenJS.NodeJS.LTS)'; }
 if (Test-Path $ulanziExe) { Good 'Ulanzi Studio installed' } else { Fail "Ulanzi Studio not found at $ulanziExe (install from ulanzi.com)" }
 
