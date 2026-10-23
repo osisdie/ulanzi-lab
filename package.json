@@ -12,7 +12,7 @@
     "link": "powershell -ExecutionPolicy Bypass -File scripts/link-plugin.ps1",
     "link:mac": "bash scripts/link-plugin.sh",
     "setup:mac": "bash scripts/setup-mac.sh",
-    "postinstall": "npm --prefix plugin/com.ulanzi.nwpie.ulanziPlugin install --no-audit --no-fund"
+    "postinstall": "cd plugin/com.ulanzi.nwpie.ulanziPlugin && npm install --no-audit --no-fund"
   },
   "license": "MIT",
   "keywords": [
