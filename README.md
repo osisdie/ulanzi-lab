@@ -285,6 +285,24 @@ Re-renders the README screenshots in `docs/images/` from demo data. It needs Chr
 - **Port.** The hub uses port 39300 because some machines reserve the 45000–48000 range.
 - **Node inside Ulanzi Studio.** Studio 3.4 for Windows runs plugins on its own bundled Node 20.12.2 (check the Mac build's with the `plugin start` line in the log), which is past end of life and gets no security fixes. So `app.js` checks its own Node first. When it lacks security fixes and a patched Node is installed (PATH, the usual install folders, or `ULANZI_LAB_NODE`), it only supervises: the plugin runs in a child process on that Node and stops when Studio stops the parent. Without a patched Node, or if the child keeps crashing, the plugin runs on Studio's Node and logs a warning. Keep your system Node updated. The hub only listens on `127.0.0.1` and accepts JSON posts only. Your own Node (tools, `npm run dev`, CI) must have them: the minimum per release line is in [src/node-floor.js](plugin/com.ulanzi.nwpie.ulanziPlugin/src/node-floor.js), which the setup scripts and CI check.
 
+> **Tip: let Ulanzi Studio use your system Node (Windows).** Studio starts plugins with its bundled
+> `C:\Program Files (x86)\Ulanzi Studio\nodejs\node.exe`. If you point that file at your system Node with a
+> symbolic link, every Node security update you install applies to all Studio plugins, without waiting for an
+> Ulanzi release. In an administrator PowerShell:
+>
+> ```powershell
+> $bundled = 'C:\Program Files (x86)\Ulanzi Studio\nodejs\node.exe'
+> $target  = & (Get-Command node -CommandType Application -ErrorAction Stop).Source -p process.execPath
+> if ($target -and (Test-Path $target)) { & $target -v; Rename-Item $bundled node.bundled.exe -ErrorAction Stop; New-Item -ItemType SymbolicLink -Path $bundled -Target $target }
+> ```
+>
+> The second line finds the real `node.exe` behind any version-manager shim. If `$target` sits in a per-shell or temporary folder (for example fnm's `fnm_multishells`), point the link at a stable install such as `C:\Program Files\nodejs\node.exe` instead. Nothing is renamed unless the target exists.
+> Restart Studio, then check that the `plugin start` line in the log shows your Node's version.
+> - **Undo:** delete the link and rename `node.bundled.exe` back to `node.exe`.
+> - **Before updating Studio, undo the link,** then re-apply it afterwards. The installer runs elevated and could otherwise write its old Node through the link over your system Node. If an update already went through with the link in place, check `node -v` and reinstall Node if it changed. If `nodejs\node.exe` is still a link, it now points at the fixed Node again and nothing else is needed. If the update replaced the link with a plain file, delete the stale `node.bundled.exe` and re-apply.
+> - **Other plugins** then run on your Node too. If one of them breaks on a newer major version, undo.
+> - **macOS:** the bundled Node sits inside the signed app bundle, and changing it can stop Studio from launching. Rely on the automatic switch described above instead.
+
 ## Uninstall
 
 Run this from the repo, inside WSL (or in a terminal on macOS):
