@@ -5,11 +5,12 @@ on:
   pull_request:
 jobs:
   test:
+    name: test (${{ matrix.os }}, node ${{ matrix.node }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]   # macOS also runs the JXA bridge through osascript
+        os: [ubuntu-latest, windows-latest, macos-latest]
         node: [20, 22]   # 20 = the Node bundled with Ulanzi Studio
     steps:
       - uses: actions/checkout@v5
@@ -17,4 +18,29 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - run: npm install --no-audit --no-fund
-      - run: npm test
+      - name: Unit tests (on macOS this also runs the JXA bridge through osascript)
+        run: npm test
+      - name: Smoke test (boot the runtime with this OS's backends)
+        run: npm run smoke
+      - name: Shell scripts (hook, statusLine, installer)
+        if: runner.os != 'Windows'
+        run: bash test/ci/shell-checks.sh
+
+  wsl:
+    name: wsl (Windows Node ↔ Ubuntu in WSL)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - uses: Vampire/setup-wsl@v7
+        with:
+          distribution: Ubuntu-24.04
+          additional-packages: jq curl
+      - name: Shell scripts inside WSL
+        shell: wsl-bash {0}
+        run: bash test/ci/shell-checks.sh
+      - name: Plugin on Windows reaches the WSL distro (discovery, liveness, login shell)
+        run: node test/ci/wsl-bridge.mjs

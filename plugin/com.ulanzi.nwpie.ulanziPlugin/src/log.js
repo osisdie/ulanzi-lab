@@ -9,7 +9,7 @@ function dataDir(dir = path.join(BASE, 'ulanzi-lab'), legacy = path.join(BASE, '
   if (fs.existsSync(dir) || !fs.existsSync(legacy)) return dir;
   try { fs.renameSync(legacy, dir); return dir; } catch { return legacy; }
 }
-export const DATA_DIR = dataDir();
+export const DATA_DIR = process.env.ULANZI_LAB_DATA_DIR || dataDir(); // override: tests / CI
 fs.mkdirSync(DATA_DIR, { recursive: true });
 const FILE = path.join(DATA_DIR, 'plugin.log');
 

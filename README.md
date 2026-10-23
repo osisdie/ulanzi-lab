@@ -240,6 +240,13 @@ npm test
 Runs the `node:test` suite: state machine, parsers, page layouts, every SVG template.
 
 ```bash
+npm run smoke
+bash test/ci/shell-checks.sh
+```
+Boots the whole runtime with this OS's backends, and checks the hook, statusLine and hook installer.
+CI runs the tests and the smoke test on Windows, macOS and Linux, plus a Windows + WSL job (`test/ci/wsl-bridge.mjs`) where the plugin on Windows Node discovers a session inside WSL.
+
+```bash
 npm run dev
 ```
 Runs the hub, providers and preview standalone. Set `ULANZI_LAB_PORT=39301` if the plugin is also running.
