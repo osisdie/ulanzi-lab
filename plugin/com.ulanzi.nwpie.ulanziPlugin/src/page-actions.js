@@ -7,10 +7,9 @@ import { osa } from './mac/osa.js';
 
 export const PAGE_ACTIONS = ['media', 'focus', 'hw', 'devops', 'prompt', 'target'];
 
-const CHIME = 'C:\\Windows\\Media\\Alarm01.wav';
 const DEFAULT_DISK = IS_WIN ? 'C:' : '/';
 
-export function createPageActions({ media, hw, devops, pomodoro, sessions, toast, chime = () => {}, log = () => {}, now = () => Date.now() }) {
+export function createPageActions({ media, hw, devops, pomodoro, sessions, toast, play = () => {}, log = () => {}, now = () => Date.now() }) {
   let pinnedTarget = null; // session id, or null = auto
   const flashUntil = new Map(); // ctx -> ms (pressed-key feedback)
 
@@ -152,8 +151,8 @@ export function createPageActions({ media, hw, devops, pomodoro, sessions, toast
   // Pomodoro clock: finish blocks, announce them.
   const pomoTimer = setInterval(() => {
     const evt = pomodoro.tick();
-    if (evt?.type === 'focus-done') { toast(`🍅 Focus block done (${evt.today} today) — ${evt.long ? 'long break' : 'break'} started`); chime(CHIME); }
-    if (evt?.type === 'break-done') { toast('Break over — ready for the next 🍅'); chime(CHIME); }
+    if (evt?.type === 'focus-done') { toast(`🍅 Focus block done (${evt.today} today) — ${evt.long ? 'long break' : 'break'} started`); play('focusDone'); }
+    if (evt?.type === 'break-done') { toast('Break over — ready for the next 🍅'); play('breakDone'); }
   }, 1000);
 
   return {

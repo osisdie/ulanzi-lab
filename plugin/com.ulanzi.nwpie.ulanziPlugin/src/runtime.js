@@ -17,7 +17,8 @@ import { DATA_DIR } from './log.js';
 import { createWinHelper } from './winhelper.js';
 import { createMacHelper } from './mac/helper.js';
 import { setOsaLog } from './mac/osa.js';
-import { IS_WIN, IS_MAC, chime } from './platform.js';
+import { IS_WIN, IS_MAC } from './platform.js';
+import { createSoundPlayer, loadSounds } from './sounds.js';
 import { MediaProvider } from './providers/media.js';
 import { HwProvider } from './providers/hw.js';
 import { DevopsProvider } from './providers/devops.js';
@@ -48,8 +49,9 @@ export function createRuntime({ port } = {}) {
   const devops = new DevopsProvider({ distro: defaultDistro(), log });
   const pomodoro = new Pomodoro({ file: path.join(DATA_DIR, 'pomodoro.json') });
   let deck = null;
-  const pages = createPageActions({ media, hw, devops, pomodoro, sessions, toast: (m) => deck?.toast(m, { force: true }), chime, log });
-  deck = createDeck({ sessions, usage, quotes, sys, wsl: host, iot, layout, focuser, pages, log });
+  const play = createSoundPlayer({ sounds: loadSounds({ log }), log });
+  const pages = createPageActions({ media, hw, devops, pomodoro, sessions, toast: (m) => deck?.toast(m, { force: true }), play, log });
+  deck = createDeck({ sessions, usage, quotes, sys, wsl: host, iot, layout, focuser, pages, play, log });
 
   // Browser preview sink: icons are read back from deck.svgOf() by the hub.
   deck.addSink('preview', { setIcon() {}, toast: (m) => log('toast', m) });
