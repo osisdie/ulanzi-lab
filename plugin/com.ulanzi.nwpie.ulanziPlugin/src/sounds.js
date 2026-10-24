@@ -14,19 +14,29 @@ const CONFIG = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'co
 const OS_FILE = { win32: 'sounds.windows.json', darwin: 'sounds.mac.json' };
 export const SOUND_EVENTS = ['focusDone', 'breakDone', 'waiting'];
 
+/** A JSON object from `file`, or {} (logged) when it is missing, invalid, or not an object: sounds never stop the plugin. */
 const readJson = (file, log) => {
-  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { log('sounds: cannot read', file, e.message); return {}; }
+  try {
+    const j = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (j && typeof j === 'object' && !Array.isArray(j)) return j;
+    log('sounds: not a JSON object, ignored', file);
+  } catch (e) { log('sounds: cannot read', file, e.message); }
+  return {};
 };
 
 /** { event: file | null } for this OS: shipped defaults, then the override file. */
 export function loadSounds({ platform = process.platform, override = env('ULANZI_LAB_SOUNDS'), log = () => {} } = {}) {
   const defaults = OS_FILE[platform] ? readJson(path.join(CONFIG, OS_FILE[platform]), log) : {};
-  // A relative override path is relative to the folder holding .env (the repo root), not Studio's working directory.
-  const mine = override ? readJson(path.resolve(ENV_FILE ? path.dirname(ENV_FILE) : process.cwd(), override), log) : {};
+  // A relative override path is relative to the folder holding .env (the repo root), not Studio's working directory;
+  // relative sound paths inside it are relative to the override file's own folder.
+  const file = override ? path.resolve(ENV_FILE ? path.dirname(ENV_FILE) : process.cwd(), override) : null;
+  const mine = file ? readJson(file, log) : {};
   const out = {};
   for (const e of SOUND_EVENTS) {
-    const v = String((e in mine ? mine[e] : defaults[e]) ?? '').trim();
-    out[e] = v && v.toLowerCase() !== 'off' ? v : null;
+    const own = Object.hasOwn(mine, e);
+    const v = String((own ? mine[e] : defaults[e]) ?? '').trim();
+    const relative = own && !(platform === 'win32' ? path.win32 : path.posix).isAbsolute(v);
+    out[e] = !v || v.toLowerCase() === 'off' ? null : relative ? path.resolve(path.dirname(file), v) : v;
   }
   return out;
 }

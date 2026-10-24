@@ -38,6 +38,26 @@ test('override file changes only the keys it sets; "off" and "" mute', () => {
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
+test('an override that is valid JSON but not an object is ignored, never thrown', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ulanzi-sounds-'));
+  for (const body of ['null', '"C:/x.wav"', '42', '["a"]']) {
+    const file = path.join(dir, 'sounds.json');
+    fs.writeFileSync(file, body);
+    const logs = [];
+    assert.deepEqual(loadSounds({ platform: 'win32', override: file, log: (...a) => logs.push(a.join(' ')) }), loadSounds({ platform: 'win32', override: '' }), body);
+    assert.match(logs[0], /not a JSON object/, body);
+  }
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('relative sound paths in the override resolve from its own folder', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ulanzi-sounds-'));
+  const file = path.join(dir, 'sounds.json');
+  fs.writeFileSync(file, JSON.stringify({ focusDone: 'media/gong.wav' }));
+  assert.equal(loadSounds({ platform: 'darwin', override: file }).focusDone, path.join(dir, 'media', 'gong.wav'));
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 test('player skips muted events and missing files, logging each missing file once', () => {
   const logs = [];
   const play = createSoundPlayer({ sounds: { focusDone: null, breakDone: '/nonexistent/x.wav', waiting: null }, log: (...a) => logs.push(a.join(' ')) });

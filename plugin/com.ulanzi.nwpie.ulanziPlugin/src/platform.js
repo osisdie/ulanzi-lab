@@ -63,7 +63,8 @@ export function startDocker(onError) {
 /** Play a sound file (Windows: .wav; macOS: anything afplay reads). Which file per event: sounds.js. */
 export function chime(file) {
   if (!file) return;
-  // PowerShell single-quoted string: a ' inside the path is written as ''.
-  if (IS_WIN) execFile('powershell.exe', ['-NoProfile', '-c', `(New-Object Media.SoundPlayer '${String(file).replace(/'/g, "''")}').PlaySync()`], { windowsHide: true }, () => {});
+  // PowerShell single-quoted string: a quote inside the path (' or the typographic ‘ ’ ‚ ‛, which PowerShell also
+  // treats as quotes) is escaped by doubling it.
+  if (IS_WIN) execFile('powershell.exe', ['-NoProfile', '-c', `(New-Object Media.SoundPlayer '${String(file).replace(/['\u2018-\u201B]/g, '$&$&')}').PlaySync()`], { windowsHide: true }, () => {});
   else if (IS_MAC) execFile('afplay', [file], () => {});
 }
