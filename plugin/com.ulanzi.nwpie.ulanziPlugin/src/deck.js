@@ -3,7 +3,8 @@
 // drives the real Ulanzi device and the browser preview.
 import { execFile, spawn } from 'node:child_process';
 import * as R from './render.js';
-import { IS_WIN, chime, openSystemMonitor } from './platform.js';
+import { IS_WIN, chime, openSystemMonitor, openUrl } from './platform.js';
+import { quoteUrl } from './providers/quotes.js';
 import { previewRects, labelOf } from './layout.js';
 
 const LONG_PRESS_MS = 800;
@@ -200,7 +201,13 @@ export function createDeck({ sessions, usage, quotes, sys, wsl, iot, layout, foc
         return;
       }
       case 'usage': return;
-      case 'stock': quotes.refreshSoon(); return;
+      case 'stock': {
+        // Press: open the quote page (a strip opens its first symbol). Hold: refresh now.
+        if (long) { quotes.refreshSoon(); toast('Quotes: refreshing…'); return; }
+        const url = quoteUrl(k.stockKeys?.[0] || s.code || '2330');
+        if (url) openUrl(url);
+        return;
+      }
       case 'sys': openSystemMonitor(); return;
       case 'wsl': {
         if (!IS_WIN) { toast('WSL is Windows-only'); return; }
