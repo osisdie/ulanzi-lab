@@ -156,6 +156,7 @@ See [.env.example](.env.example) for the full list with comments. After editing,
 | `ULANZI_LAB_WATCHLIST` | (none) | Up to 12 `SYMBOL:label` items. Adds a Watchlist page. |
 | `ULANZI_LAB_WATCHLIST_STRIP` | (none) | Up to 3 items for the Watchlist wide key (mini candlesticks) |
 | `ULANZI_LAB_DISTRO` | default distro | WSL distro the plugin talks to |
+| `ULANZI_LAB_SOUNDS` | — | Your own sounds JSON, relative to the repo root or absolute. It overrides only the keys it sets (`focusDone`, `breakDone`, `waiting`; `"off"` mutes). Defaults: [`config/sounds.windows.json`](plugin/com.ulanzi.nwpie.ulanziPlugin/config/sounds.windows.json), [`config/sounds.mac.json`](plugin/com.ulanzi.nwpie.ulanziPlugin/config/sounds.mac.json). Windows plays `.wav` only. |
 | `ULANZI_LAB_NODE` | found automatically | Node that runs the plugin when Studio's bundled one lacks security fixes; `bundled` keeps Studio's |
 | `ULANZI_LAB_N8N_URL` | `http://127.0.0.1:5678` | n8n key |
 | `ULANZI_LAB_PORT` / `ULANZI_LAB_GAP` | `39300` / `0` | Hub port / gap between snapped windows |

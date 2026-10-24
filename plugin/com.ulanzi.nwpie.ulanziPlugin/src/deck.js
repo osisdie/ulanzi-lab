@@ -3,12 +3,11 @@
 // drives the real Ulanzi device and the browser preview.
 import { execFile, spawn } from 'node:child_process';
 import * as R from './render.js';
-import { IS_WIN, chime, openSystemMonitor, openUrl } from './platform.js';
+import { IS_WIN, openSystemMonitor, openUrl } from './platform.js';
 import { quoteUrl } from './providers/quotes.js';
 import { previewRects, labelOf } from './layout.js';
 
 const LONG_PRESS_MS = 800;
-const CHIME = 'C:\\Windows\\Media\\chimes.wav';
 const TICK_MS = 250; // animation frame; the blink phase is every 2 ticks (500 ms)
 const WAVE_FRAMES = 8; // full-panel alert wave length (2 s)
 
@@ -19,7 +18,7 @@ export function keyPos(key) {
   return { x: key === '3_2' ? 3.5 : c, y: r };
 }
 
-export function createDeck({ sessions, usage, quotes, sys, wsl, iot, layout, focuser, pages = null, log = () => {}, now = () => Date.now() }) {
+export function createDeck({ sessions, usage, quotes, sys, wsl, iot, layout, focuser, pages = null, play = () => {}, log = () => {}, now = () => Date.now() }) {
   const keys = new Map(); // ctx -> {action, settings, key, sinkId, last, downAt, confirmUntil, stockKey}
   const sinks = new Map(); // sinkId -> sink
   let tick = 0;
@@ -292,7 +291,7 @@ export function createDeck({ sessions, usage, quotes, sys, wsl, iot, layout, foc
     if (!due.length || t - nag.lastAt < nag.everyMs) return;
     nag.lastAt = t;
     log('nag', due.map(s => s.project));
-    chime(CHIME);
+    play('waiting');
   }
 
   return {

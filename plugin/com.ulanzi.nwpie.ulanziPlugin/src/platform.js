@@ -60,9 +60,10 @@ export function startDocker(onError) {
   else onError?.(new Error('unsupported'));
 }
 
-const MAC_SOUND = '/System/Library/Sounds/Glass.aiff';
-/** Play a short alert. `wav` is the Windows sound file; macOS uses a system sound. */
-export function chime(wav) {
-  if (IS_WIN) execFile('powershell.exe', ['-NoProfile', '-c', `(New-Object Media.SoundPlayer '${wav}').PlaySync()`], { windowsHide: true }, () => {});
-  else if (IS_MAC) execFile('afplay', [MAC_SOUND], () => {});
+/** Play a sound file (Windows: .wav; macOS: anything afplay reads). Which file per event: sounds.js. */
+export function chime(file) {
+  if (!file) return;
+  // PowerShell single-quoted string: a ' inside the path is written as ''.
+  if (IS_WIN) execFile('powershell.exe', ['-NoProfile', '-c', `(New-Object Media.SoundPlayer '${String(file).replace(/'/g, "''")}').PlaySync()`], { windowsHide: true }, () => {});
+  else if (IS_MAC) execFile('afplay', [file], () => {});
 }
