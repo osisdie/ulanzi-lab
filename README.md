@@ -191,7 +191,7 @@ The page buttons (`0_3` / `1_3`) flip pages. Every page keeps a **HITL** key.
 | Claude Session | Slot S1–S8: project, state, time, context bar. **Waiting blinks** (red = permission, purple = question, orange = plan) | Focus the session | Dismiss |
 | Claude HITL | Waiting count (Clawd mascot or big counter) | Focus the longest-waiting session; press again to cycle | Acknowledge all |
 | Claude Usage | 5h / 7d ring, or the wide fleet strip | — | — |
-| Stock Quote | TW (`2330`, `t00`, `otc:6488`) or Yahoo symbols (`NVDA`, `^DJI`, `GC=F`, `TWD=X`, `BTC-USD`) with an intraday chart. A comma list gives a candlestick strip. Red = up by default. | Refresh | — |
+| Stock Quote | TW (`2330`, `t00`, `otc:6488`) or Yahoo symbols (`NVDA`, `^DJI`, `GC=F`, `TWD=X`, `BTC-USD`) with an intraday chart. A comma list gives a candlestick strip. Red = up by default. | Open the quote page (Yahoo奇摩股市 for TW, Yahoo Finance otherwise; a strip opens its first symbol) | Refresh |
 | Media & Audio | Now playing, volume, mic, output device | Play/pause, volume, mute, cycle | — |
 | Focus Timer | Pomodoro parts | Start/pause, reset, +5, … | Reset |
 | Hardware | One metric per key | Task Manager / Explorer | — |

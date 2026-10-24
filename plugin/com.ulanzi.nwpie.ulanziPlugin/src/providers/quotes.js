@@ -34,6 +34,14 @@ export function normalizeCode(input) {
   return { key: sym, market, yahoo: sym };
 }
 
+/** Quote page for a code: Yahoo奇摩股市 for Taiwan listings, Yahoo Finance for everything else. null if invalid. */
+export function quoteUrl(input) {
+  const n = normalizeCode(input);
+  if (!n) return null;
+  const sym = encodeURIComponent(n.yahoo);
+  return n.market === 'tw' ? `https://tw.stock.yahoo.com/quote/${sym}` : `https://finance.yahoo.com/quote/${sym}/`;
+}
+
 const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : null; };
 
 /** Parse one TWSE MIS msgArray item. */

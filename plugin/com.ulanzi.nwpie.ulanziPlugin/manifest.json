@@ -83,7 +83,7 @@
           "Image": "images/stock.svg"
         }
       ],
-      "Tooltip": "TW or US quote (2330, t00, NVDA, ^DJI, GC=F). Comma list = multi-row strip. Red=up by default.",
+      "Tooltip": "TW or US quote (2330, t00, NVDA, ^DJI, GC=F). Comma list = multi-row strip. Red=up by default. Press: open the quote page; hold: refresh.",
       "UUID": "com.ulanzi.ulanzistudio.nwpie.stock",
       "SupportedInMultiActions": false,
       "DisableAutomaticStates": true,

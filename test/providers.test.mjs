@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeCode, parseMis, parseYahoo, isMarketOpen } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/providers/quotes.js';
+import { normalizeCode, quoteUrl, parseMis, parseYahoo, isMarketOpen } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/providers/quotes.js';
 import { parseProc } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/providers/wsl.js';
 import { UsageStore } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/usage.js';
 
@@ -18,6 +18,17 @@ test('normalizeCode', () => {
   assert.equal(normalizeCode('bad symbol!'), null);
   assert.deepEqual(normalizeCode('6488.TWO'), normalizeCode('otc:6488'));
   assert.equal(normalizeCode(''), null);
+});
+
+test('quoteUrl: Taiwan listings on Yahoo TW, the rest on Yahoo Finance, symbols encoded', () => {
+  assert.equal(quoteUrl('2330'), 'https://tw.stock.yahoo.com/quote/2330.TW');
+  assert.equal(quoteUrl('t00'), 'https://tw.stock.yahoo.com/quote/%5ETWII');
+  assert.equal(quoteUrl('otc:6488'), 'https://tw.stock.yahoo.com/quote/6488.TWO');
+  assert.equal(quoteUrl('nvda'), 'https://finance.yahoo.com/quote/NVDA/');
+  assert.equal(quoteUrl('^DJI'), 'https://finance.yahoo.com/quote/%5EDJI/');
+  assert.equal(quoteUrl('GC=F'), 'https://finance.yahoo.com/quote/GC%3DF/');
+  assert.equal(quoteUrl('BTC-USD'), 'https://finance.yahoo.com/quote/BTC-USD/');
+  assert.equal(quoteUrl('bad symbol!'), null);
 });
 
 test('parseMis: up/down and z="-" fallback to best bid', () => {
