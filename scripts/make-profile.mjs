@@ -151,23 +151,32 @@ console.log(`${prev ? 'updated' : 'created'} profile "${NAME}" → ${dir}`);
 // --activate selects this profile. Without it, a replaced profile that was selected under its old name follows the
 // rename, or Studio creates an empty profile under the old name on its next start. The first backup of each file is kept.
 const SELECTIONS = [
-  { file: SETTING_SOURCE, set: (s, from) => { for (const d of s.Devices || []) if ((d.CurrentDevice === device.UUID || d.DeviceType === device.Model) && (from === null || d.CurrentProfile === from)) d.CurrentProfile = NAME; } },
+  { file: SETTING_SOURCE, set: (s, from) => {
+    // This deck by UUID; by model only if no entry has the UUID (another D200X can't load this deck's profile).
+    const all = s.Devices || [];
+    const mine = all.filter(d => d.CurrentDevice === device.UUID);
+    for (const d of mine.length ? mine : all.filter(d => d.DeviceType === device.Model)) if (from === null || d.CurrentProfile === from) d.CurrentProfile = NAME;
+  } },
   { file: SETTING, set: (s, from) => { if (from === null || s.CurrentProfile === from) s.CurrentProfile = NAME; } },
 ];
 function select(from) {
+  let changed = 0;
   for (const { file, set } of SELECTIONS) {
     let raw, s;
     try { raw = fs.readFileSync(file, 'utf8'); } catch { continue; } // this Studio build doesn't use it
-    try { s = JSON.parse(raw); } catch { console.warn(`${path.basename(file)} is not JSON: left alone`); continue; }
+    try { s = JSON.parse(raw.replace(/^\uFEFF/, '')); } catch { console.warn(`${path.basename(file)} is not JSON: left alone`); continue; }
     const before = JSON.stringify(s);
     set(s, from);
     if (JSON.stringify(s) === before) continue;
     if (![`${file}.bak.ulanzi-lab`, `${file}.bak.ulanzi_lab`].some(f => fs.existsSync(f))) fs.writeFileSync(`${file}.bak.ulanzi-lab`, raw);
-    fs.writeFileSync(file, JSON.stringify(s, null, raw.includes('\n') ? 4 : 0)); // keep Studio's own layout
+    fs.writeFileSync(`${file}.tmp`, JSON.stringify(s, null, raw.includes('\n') ? 4 : 0)); // keep Studio's own layout
+    fs.renameSync(`${file}.tmp`, file); // a crash mid-write can't leave Studio a truncated file
     console.log(`${path.basename(file)}: CurrentProfile = ${NAME}`);
+    changed++;
   }
+  return changed;
 }
-if (has('--activate')) select(null);
+if (has('--activate') && !select(null)) console.log(`no selection file changed: select "${NAME}" in Ulanzi Studio`);
 else if (prev && prev.m.Name !== NAME) select(prev.m.Name);
 
 if (wasRunning && !has('--no-restart')) {
