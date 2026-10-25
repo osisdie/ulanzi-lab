@@ -75,6 +75,8 @@ export async function concatWav(files, out) {
   }
   const total = parts.reduce((n, p) => n + p.h.dataSize, 0);
   const ws = fs.createWriteStream(out);
+  // Fail on an unwritable output before any segment is opened: Windows can't rename a folder with a file open.
+  await new Promise((resolve, reject) => { ws.once('open', resolve); ws.once('error', reject); });
   ws.write(wavHeader(fmt, total));
   for (const p of parts) await pipeline(fs.createReadStream(p.f, { start: p.h.dataOffset, end: p.h.dataOffset + p.h.dataSize - 1 }), ws, { end: false });
   await new Promise((resolve, reject) => ws.end((e) => (e ? reject(e) : resolve())));

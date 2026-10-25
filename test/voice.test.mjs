@@ -494,7 +494,7 @@ test('a failed join keeps the segments for recovery and removes the partial outp
   rec.resume();
   await assert.rejects(rec.stop(), /format differs/);
   const [id] = fs.readdirSync(dirs.parts);
-  assert.deepEqual(fs.readdirSync(path.join(dirs.parts, id)).sort(), ['001.wav', '002.wav']); // no pid file left
+  assert.deepEqual(fs.readdirSync(path.join(dirs.parts, id)).sort(), ['001.wav', '002.wav', 'owner']); // no pid file left
   assert.deepEqual(fs.readdirSync(dirs.recordings).filter(f => f.endsWith('.wav')), []);
   assert.equal(rec.state, 'idle');
   fs.rmSync(dir, { recursive: true, force: true });
@@ -624,29 +624,37 @@ test('the time limit finishes once the key step holding the lock is done', async
 
 // ---------------------------------------------------------------- recovery never destroys what it couldn't save
 
-test('recoverParts keeps the segments when saving fails, and skips a folder another instance is still recording into', async () => {
+test('recoverParts keeps what it cannot save (as <id>.failed, retried at start) and skips another live instance\'s folder', async () => {
   const dir = tmp();
   const dirs = voiceDirs(dir);
   ensureDirs(dirs);
   const kept = path.join(dirs.parts, '20261025-090000');
   fs.mkdirSync(kept, { recursive: true });
   ffmpegWav(path.join(kept, '001.wav'), 16000);
+  fs.writeFileSync(path.join(kept, 'ffmpeg.pid'), 'garbage'); // unreadable pids must not break recovery
   // recordings/ can't be written (here: a file stands where its parent folder should be).
   const blocked = { ...dirs, recordings: path.join(dir, 'not-a-dir', 'recordings') };
   fs.writeFileSync(path.join(dir, 'not-a-dir'), 'x');
-  const r1 = await recoverParts(blocked, {});
+  const r1 = await recoverParts(blocked, { live: 'skip' });
   assert.deepEqual(r1.saved, []);
   assert.equal(r1.failed[0].id, '20261025-090000');
-  assert.ok(fs.existsSync(path.join(kept, '001.wav')), 'segments kept for the next attempt');
-  // A live recording of another instance: left alone at press time, never killed.
-  fs.writeFileSync(path.join(kept, 'ffmpeg.pid'), '4321');
-  const r2 = await recoverParts(dirs, { live: 'skip', isLive: async () => true, kill: () => assert.fail('must not kill at press time') });
-  assert.deepEqual(r2, { saved: [], failed: [] });
-  assert.ok(fs.existsSync(path.join(kept, '001.wav')));
-  // Once writable (and not live), it is saved and the folder goes.
-  const r3 = await recoverParts(dirs, { live: 'skip', isLive: async () => false });
+  assert.ok(fs.existsSync(path.join(`${kept}.failed`, '001.wav')), 'kept, renamed .failed');
+  // Key presses don't retry it (reported once) …
+  assert.deepEqual(await recoverParts(dirs, { live: 'skip' }), { saved: [], failed: [] });
+  // … the next plugin start does, under the original name.
+  const r3 = await recoverParts(dirs, { live: 'kill', kill: async () => false });
   assert.deepEqual(r3.saved.map(f => path.basename(f)), ['20261025-090000-recovered.wav']);
   assert.deepEqual(fs.readdirSync(dirs.parts), []);
+  // Another running instance's folder (paused: no ffmpeg, but its owner is alive) is skipped at press time and
+  // never killed; our own leftovers are recovered.
+  const theirs = path.join(dirs.parts, '20261025-100000');
+  fs.mkdirSync(theirs, { recursive: true });
+  ffmpegWav(path.join(theirs, '001.wav'), 1600);
+  fs.writeFileSync(path.join(theirs, 'owner'), String(process.ppid));
+  const r4 = await recoverParts(dirs, { live: 'skip', isLive: async () => false, kill: () => assert.fail('must not kill at press time') });
+  assert.deepEqual(r4, { saved: [], failed: [] });
+  fs.writeFileSync(path.join(theirs, 'owner'), String(process.pid));
+  assert.equal((await recoverParts(dirs, { live: 'skip', isLive: async () => false })).saved.length, 1);
   fs.rmSync(dir, { recursive: true, force: true });
 });
 

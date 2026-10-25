@@ -35,9 +35,13 @@ export class Recorder extends EventEmitter {
     // Two recordings within one second would share a name: add a suffix rather than overwrite.
     const base = stamp(new Date(this.now()));
     this.id = base;
-    for (let n = 2; fs.existsSync(path.join(this.dirs.recordings, `${this.id}.wav`)) || fs.existsSync(path.join(this.dirs.parts, this.id)); n++) this.id = `${base}-${n}`;
+    const taken = (id) => [path.join(this.dirs.recordings, `${id}.wav`), path.join(this.dirs.parts, id), path.join(this.dirs.parts, `${id}.failed`)].some(f => fs.existsSync(f));
+    for (let n = 2; taken(this.id); n++) this.id = `${base}-${n}`;
     this.dir = path.join(this.dirs.parts, this.id);
     fs.mkdirSync(this.dir, { recursive: true });
+    // Which plugin process owns this folder: another instance (Studio vs the dev preview) must not recover it while
+    // it is paused, when no ffmpeg is running to show it is alive.
+    fs.writeFileSync(path.join(this.dir, 'owner'), String(process.pid));
     this.segments = [];
     this.doneMs = 0;
     this.startSegment();
@@ -165,22 +169,38 @@ export async function killOrphan(pid, { id, platform = process.platform, run = e
   return new Promise((resolve) => run('taskkill', ['/PID', String(Number(pid)), '/F'], { windowsHide: true }, (e) => resolve(!e)));
 }
 
+/** Rename, retrying briefly: on Windows a file just closed can still block renaming its folder for a moment. */
+async function renameSoon(from, to) {
+  for (let i = 0; i < 5; i++) {
+    try { fs.renameSync(from, to); return true; } catch { await new Promise(r => setTimeout(r, 100)); }
+  }
+  return false;
+}
+
+const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
+const readPid = (file) => { try { return Number(fs.readFileSync(file, 'utf8')) || 0; } catch { return 0; } };
+
 /**
  * Save what a crash or a failed save left in recordings/.parts as recordings/<stamp>-recovered.wav.
  * At plugin start (`live: 'kill'`) an ffmpeg still recording there is ours from before the crash: stop it. On a key
- * press (`live: 'skip'`) it may be another running instance's recording (Studio and the dev preview share the folder):
- * leave that folder alone. A folder is deleted only once saved, or when it holds no audio; if saving fails (disk full,
- * folder locked) the segments stay for the next attempt. Resolves { saved: [files], failed: [{ id, error }] }.
+ * press (`live: 'skip'`) leave alone a folder another running instance owns (Studio and the dev preview share the
+ * folder; its recording may be paused, with no ffmpeg running) or whose ffmpeg is still recording.
+ * A folder is deleted only once saved, or when it holds no audio. If saving fails (disk full, folder locked) it is
+ * renamed <id>.failed and kept: key presses skip it, so the failure is reported once; the next plugin start retries.
+ * Resolves { saved: [files], failed: [{ id, error }] }.
  */
 export async function recoverParts(dirs, { live = 'kill', kill = killOrphan, isLive = ownFfmpeg, log = () => {} } = {}) {
   const saved = [], failed = [];
-  let ids = [];
-  try { ids = fs.readdirSync(dirs.parts); } catch { return { saved, failed }; }
-  for (const id of ids) {
-    const dir = path.join(dirs.parts, id);
-    const pidFile = path.join(dir, 'ffmpeg.pid');
-    const pid = fs.existsSync(pidFile) ? Number(fs.readFileSync(pidFile, 'utf8')) : 0;
-    if (pid && live === 'skip' && await isLive(pid, { id })) continue;
+  let names = [];
+  try { names = fs.readdirSync(dirs.parts); } catch { return { saved, failed }; }
+  for (const name of names) {
+    const retry = name.endsWith('.failed');
+    if (retry && live === 'skip') continue;
+    const id = name.replace(/\.failed$/, '');
+    const dir = path.join(dirs.parts, name);
+    const pid = readPid(path.join(dir, 'ffmpeg.pid'));
+    const owner = readPid(path.join(dir, 'owner'));
+    if (live === 'skip' && ((owner && owner !== process.pid && alive(owner)) || (pid && await isLive(pid, { id })))) continue;
     if (pid && live === 'kill' && await kill(pid, { id })) await new Promise(r => setTimeout(r, 500));
     const file = path.join(dirs.recordings, `${id}-recovered.wav`);
     try {
@@ -191,7 +211,12 @@ export async function recoverParts(dirs, { live = 'kill', kill = killOrphan, isL
       log('recorder: recovered', file);
     } catch (e) {
       tryRm(file);
-      if (!e.empty) { failed.push({ id, error: e.message }); log('recorder: could not recover', dir, e.message); continue; }
+      if (!e.empty) {
+        failed.push({ id, error: e.message });
+        log('recorder: could not recover', dir, e.message);
+        if (!retry) await renameSoon(dir, `${dir}.failed`); // if it can't be renamed it stays, under its own name
+        continue;
+      }
       log('recorder: nothing to recover in', dir);
     }
     tryRm(dir, { recursive: true });
