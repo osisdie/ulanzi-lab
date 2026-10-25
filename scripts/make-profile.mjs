@@ -5,7 +5,8 @@
 //
 // Default layout: the "ulanzi-lab" profile from plugin/.../src/pages.js.
 // --layout <module> builds another plugin's profile instead.
-// A layout module exports PROFILE = { name, icon, pages, plugin: { uuid, name, folder, src, actionNames, iconFor(action) } }.
+// A layout module exports PROFILE = { name, icon, pages, plugin: { uuid, name, folder, src, actionNames, iconFor(action) } }
+// and optionally legacy: { name, marker }, an older generated profile of the same layout that it replaces in place.
 //
 // - Writes a NEW profile folder into %APPDATA%\Ulanzi\UlanziDeck\ProfilesV2 (macOS: ~/Library/Application Support/
 //   Ulanzi/UlanziDeck/ProfilesV2); existing profiles are untouched.
@@ -28,7 +29,6 @@ const EXE = 'C:\\Program Files (x86)\\Ulanzi Studio\\UlanziDeck.exe';
 const MAC_APP = '/Applications/Ulanzi Studio.app';
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MARKER = '.ulanzi-lab';
-const LEGACY = { name: 'ulanzi_lab', marker: '.ulanzi_lab' }; // pre-rename profile, replaced in place
 const fwd = (p) => p.replace(/\\/g, '/');
 
 async function loadLayout() {
@@ -38,6 +38,7 @@ async function loadLayout() {
   const { PAGES, PLUGIN_UUID, ACTION_NAMES } = await import(pathToFileURL(path.join(src, 'src', 'pages.js')).href);
   return {
     name: 'ulanzi-lab', icon: path.join(src, 'images', 'plugin.svg'), pages: PAGES,
+    legacy: { name: 'ulanzi_lab', marker: '.ulanzi_lab' }, // before the rename; other layouts must never take it over
     plugin: { uuid: PLUGIN_UUID, name: 'ulanzi-lab', folder: 'com.ulanzi.nwpie.ulanziPlugin', src, actionNames: ACTION_NAMES, iconFor: (a) => `images/${a}.svg` },
   };
 }
@@ -83,9 +84,11 @@ const action = (name, settings) => ({
   ViewParam: [{ Icon: fwd(path.join(PLUGIN_INSTALLED, PLUGIN.iconFor(name))), IconRel: '' }],
 });
 
-// Replace the profile this script generated under the same name, never a user-made one.
+// Replace the profile this script generated for this layout (same name, or the layout's legacy name), never a user-made
+// one or another layout's.
+const LEGACY = LAYOUT.legacy;
 const prev = manifests.find(x => x.m.Name === NAME && fs.existsSync(path.join(PROFILES, x.dir, MARKER)))
-  || manifests.find(x => x.m.Name === LEGACY.name && fs.existsSync(path.join(PROFILES, x.dir, LEGACY.marker)));
+  || (LEGACY && manifests.find(x => x.m.Name === LEGACY.name && fs.existsSync(path.join(PROFILES, x.dir, LEGACY.marker))));
 const clash = manifests.find(x => x.m.Name === NAME && x !== prev);
 if (clash) throw new Error(`a profile named "${NAME}" already exists (${clash.dir}) and was not made by this script`);
 const profileId = prev ? prev.dir.replace('.ulanziProfile', '') : crypto.randomUUID();
@@ -140,7 +143,11 @@ for (const p of pages) {
 }
 console.log(`${prev ? 'updated' : 'created'} profile "${NAME}" → ${dir}`);
 
-if (has('--activate')) {
+// Studio selects the current profile by name. If it names the legacy profile just renamed here, follow the rename, or
+// Studio creates an empty profile under the old name on its next start.
+const currentProfile = () => { try { return JSON.parse(fs.readFileSync(SETTING, 'utf8')).CurrentProfile; } catch { return null; } };
+const followRename = prev && prev.m.Name !== NAME && currentProfile() === prev.m.Name;
+if (has('--activate') || followRename) {
   const raw = fs.readFileSync(SETTING, 'utf8');
   if (![`${SETTING}.bak.ulanzi-lab`, `${SETTING}.bak.ulanzi_lab`].some(f => fs.existsSync(f))) fs.writeFileSync(`${SETTING}.bak.ulanzi-lab`, raw); // keep the first (pre-lab) backup
   const s = JSON.parse(raw);
