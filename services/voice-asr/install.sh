@@ -9,12 +9,13 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 HOME_DIR="${VOICE_ASR_HOME:-$HOME/.local/share/ulanzi-lab/voice-asr}"
 die() { echo "voice-asr: $*" >&2; exit 1; }
 command -v uv >/dev/null || die "needs uv (https://docs.astral.sh/uv/)"
-# uv 0.9 is the first to download 3.14 final (0.8 picks a beta or release candidate) and to have `python upgrade`.
+# uv 0.9 is the first to download 3.14 final (0.8 picks a beta or release candidate; older lacks venv --clear).
 # A newer uv also knows newer patch releases, so keep it current: uv self update.
 uvv="$(uv --version | awk '{print $2}')"
 [ "${uvv%%.*}" -gt 0 ] || [ "$(echo "$uvv" | cut -d. -f2)" -ge 9 ] || die "needs uv 0.9 or newer (found $uvv): uv self update"
 # The running service imports packages lazily, so rebuilding its venv under it breaks it until it restarts.
-! pgrep -f -- "$HOME_DIR/.venv/bin/python" >/dev/null || die "the service is running: quit Ulanzi Studio (or wait for its idle exit) first"
+idle() { ! pgrep -f -- "$HOME_DIR/.venv/bin/python" >/dev/null || die "the service is running: quit Ulanzi Studio (or wait for its idle exit), then run this again"; }
+idle
 
 PY=3.14 # every runtime wheel (ctranslate2, onnxruntime, av, tokenizers) and CPU torch exists for it
 uv python install -q "$PY"
@@ -26,8 +27,11 @@ mkdir -p "$HOME_DIR/models"
 uv venv -q --clear --relocatable --managed-python -p "$PY" "$HOME_DIR/.venv.new"
 final "$HOME_DIR/.venv.new" || die "uv installed a pre-release Python: uv self update, then run this again"
 VIRTUAL_ENV="$HOME_DIR/.venv.new" uv pip install -q -r "$HERE/requirements.txt"
-rm -rf "$HOME_DIR/.venv"
+idle # again: the plugin may have started the service during the install (.venv.new stays for the next run)
+rm -rf "$HOME_DIR/.venv.old"
+[ ! -e "$HOME_DIR/.venv" ] || mv "$HOME_DIR/.venv" "$HOME_DIR/.venv.old" # kept until the new one is in place
 mv "$HOME_DIR/.venv.new" "$HOME_DIR/.venv"
+rm -rf "$HOME_DIR/.venv.old"
 
 CONVERT="$HOME_DIR/.convert-venv"
 convert() { # name repo revision
