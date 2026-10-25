@@ -289,6 +289,26 @@
         "Keypad"
       ],
       "Devices": []
+    },
+    {
+      "Name": "Voice",
+      "Icon": "images/voice.svg",
+      "PropertyInspectorPath": "inspector/voice.html",
+      "state": 0,
+      "States": [
+        {
+          "Name": "Voice",
+          "Image": "images/voice.svg"
+        }
+      ],
+      "Tooltip": "Record from the microphone and get a transcript (local speech-to-text): record / pause, finish, cancel, last transcript, copy, language.",
+      "UUID": "com.ulanzi.ulanzistudio.nwpie.voice",
+      "SupportedInMultiActions": false,
+      "DisableAutomaticStates": true,
+      "Controllers": [
+        "Keypad"
+      ],
+      "Devices": []
     }
   ],
   "OS": [

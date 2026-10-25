@@ -1,7 +1,8 @@
 // Wires stores, providers, OS helpers (Win32 + WSL on Windows, JXA on macOS), the deck controller and the hub together.
 // Used by src/main.js (inside Ulanzi Studio) and by `node src/runtime.js` (standalone dev + browser preview).
 import './env.js'; // load .env before any module reads process.env
-import { pathToFileURL } from 'node:url';
+import fs from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { log } from './log.js';
 import { createStores, startHub, startLiveness } from './hub.js';
 import { createDeck } from './deck.js';
@@ -23,7 +24,10 @@ import { MediaProvider } from './providers/media.js';
 import { HwProvider } from './providers/hw.js';
 import { DevopsProvider } from './providers/devops.js';
 import { Pomodoro } from './pomodoro.js';
-import { createPageActions } from './page-actions.js';
+import { combineActions, createPageActions } from './page-actions.js';
+import { VoiceProvider } from './providers/voice.js';
+import { createVoiceActions } from './voice-actions.js';
+import { VOICE_PAGES } from './voice-pages.js';
 
 import { PAGES, PLUGIN_UUID } from './pages.js';
 import { defaultDistro } from './distro.js';
@@ -32,6 +36,8 @@ import { defaultDistro } from './distro.js';
 const windows = IS_WIN ? await import('./win32.js') : IS_MAC ? await import('./mac/windows.js') : null;
 const noHelper = { request: async () => null, stop() {} };
 const noLayout = { apply: () => ({ ok: false, why: `window layout is not supported on ${process.platform}` }) };
+// Repo root (the plugin folder is a junction / symlink into it): the Voice keys start services/ from here.
+const REPO = path.resolve(fs.realpathSync(path.dirname(fileURLToPath(import.meta.url))), '..', '..', '..');
 
 export function createRuntime({ port } = {}) {
   const { sessions, usage } = createStores({ log });
@@ -50,18 +56,25 @@ export function createRuntime({ port } = {}) {
   const pomodoro = new Pomodoro({ file: path.join(DATA_DIR, 'pomodoro.json') });
   let deck = null;
   const play = createSoundPlayer({ sounds: loadSounds({ log }), log });
-  const pages = createPageActions({ media, hw, devops, pomodoro, sessions, toast: (m) => deck?.toast(m, { force: true }), play, log });
+  const toast = (m) => deck?.toast(m, { force: true });
+  const voice = new VoiceProvider({ helper, play, log, repoRoot: REPO, stateFile: path.join(DATA_DIR, 'voice.json'), distro: defaultDistro() });
+  const pages = combineActions(
+    createPageActions({ media, hw, devops, pomodoro, sessions, toast, play, log }),
+    createVoiceActions({ voice, toast }),
+  );
   deck = createDeck({ sessions, usage, quotes, sys, wsl: host, iot, layout, focuser, pages, play, log });
 
   // Browser preview sink: icons are read back from deck.svgOf() by the hub.
   deck.addSink('preview', { setIcon() {}, toast: (m) => log('toast', m) });
-  PAGES.forEach((page, i) => {
+  // The Voice profile's pages follow the main ones in the preview.
+  const ALL_PAGES = [...PAGES, ...VOICE_PAGES];
+  ALL_PAGES.forEach((page, i) => {
     for (const [key, action, settings] of page.keys) deck.add('preview', `preview___p${i + 1}___${key}`, `${PLUGIN_UUID}.${action}`, settings, key);
   });
 
   quotes.start(); sys.start(); host.start(); iot.start(); media.start(); hw.start(); devops.start();
   const stopLiveness = startLiveness({ sessions, host, log });
-  const hub = startHub({ sessions, usage, deck, focuser, providers: { sys, wsl: host, pageNames: PAGES.map(p => p.name) }, port, log });
+  const hub = startHub({ sessions, usage, deck, focuser, providers: { sys, wsl: host, pageNames: ALL_PAGES.map(p => p.name) }, port, log });
 
   return {
     sessions, usage, deck, hub, layout, focuser, MODES, PRESETS,

@@ -9,8 +9,12 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 pass() { printf 'ok  %s\n' "$1"; }
 
-for f in hooks/*.sh statusline/*.sh scripts/*.sh test/ci/*.sh; do bash -n "$f"; done
+for f in hooks/*.sh statusline/*.sh scripts/*.sh services/*/*.sh test/ci/*.sh; do bash -n "$f"; done
 pass 'bash -n on every script'
+if command -v python3 >/dev/null; then
+  for f in services/*/*.py; do python3 -c 'import ast, sys; ast.parse(open(sys.argv[1], encoding="utf-8").read(), sys.argv[1])' "$f"; done
+  pass 'python syntax of services/'
+fi
 
 # Stub curl: record what would be posted to the hub, by path.
 mkdir -p "$tmp/bin"
