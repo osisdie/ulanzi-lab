@@ -1,7 +1,7 @@
 # Long-running Windows helper for ulanzi-lab: one JSON request per stdin line, one JSON reply per stdout line.
 #   {"id":1,"cmd":"media"}  {"id":2,"cmd":"media.ctl","arg":"playpause"}  {"id":3,"cmd":"audio"}
 #   {"id":4,"cmd":"audio.set","arg":{"what":"mute"}}  {"id":5,"cmd":"perf"}
-#   {"id":6,"cmd":"clip.set","arg":"text"}  {"id":7,"cmd":"docs.path"}  {"id":8,"cmd":"mic.default"}
+#   {"id":6,"cmd":"clip.set","arg":"text"}  {"id":7,"cmd":"mic.default"}
 # Media = Windows media session (SMTC: Spotify, browsers/YouTube Music, ...). Audio = Core Audio COM.
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -211,7 +211,6 @@ while ($true) {
       'audio.set' { AudioSet $req.arg }
       'perf' { Perf }
       'clip.set' { Set-Clipboard -Value ([string]$req.arg); @{ ok = $true } }
-      'docs.path' { @{ path = [Environment]::GetFolderPath('MyDocuments') } }
       'mic.default' { @{ name = [UL.Audio]::CaptureName() } }
       default { @{ error = "unknown cmd $($req.cmd)" } }
     }

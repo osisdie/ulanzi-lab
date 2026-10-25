@@ -12,7 +12,7 @@ import { punctuate, toSrt, transcribe, LANGUAGES } from '../plugin/com.ulanzi.nw
 import { postMultipart, retryBusy } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/voice/http.js';
 import { createService, startCommand, shq } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/voice/service.js';
 import { Recorder, recoverParts, killOrphan } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/voice/recorder.js';
-import { voiceDirs, ensureDirs, newestFile, stamp } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/voice/paths.js';
+import { voiceDirs, voiceRoot, ensureDirs, newestFile, stamp } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/voice/paths.js';
 import { VoiceProvider } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/providers/voice.js';
 import { voiceKey } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/render-voice.js';
 import { createVoiceActions, VOICE_PARTS } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/voice-actions.js';
@@ -565,4 +565,58 @@ test('wav: half a trailing sample is ignored; same-second recordings get distinc
   }
   assert.deepEqual(names, ['20261025-100000.wav', '20261025-100000-2.wav']);
   fs.rmSync(dir, { recursive: true, force: true });
+});
+
+// ---------------------------------------------------------------- local folder, empty recordings, recovery on press
+
+test('voice folder: ~/ulanzi-lab/voice on every OS (not Documents), ULANZI_LAB_VOICE_DIR overrides', () => {
+  assert.equal(voiceRoot({ env: {}, home: '/home/me' }), path.join('/home/me', 'ulanzi-lab', 'voice'));
+  assert.equal(voiceRoot({ env: { ULANZI_LAB_VOICE_DIR: '/data/voice' }, home: '/home/me' }), '/data/voice');
+});
+
+test('a recording with no audio is dropped with "nothing was recorded", not kept for recovery', async () => {
+  const dir = tmp();
+  try {
+    const v = provider(dir, { spawn: fakeFfmpeg({ samples: 0 }) });
+    await v.ready;
+    await v.toggle();
+    assert.equal(await v.finish({ transcribe: true }), 'nothing was recorded');
+    assert.deepEqual([v.get().phase, v.get().message], ['idle', 'nothing was recorded']);
+    assert.deepEqual(fs.readdirSync(path.join(dir, 'voice', 'recordings', '.parts')), []);
+  } finally { delete process.env.ULANZI_LAB_VOICE_DIR; fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('segments kept by a failed save are recovered on the next ● press', async () => {
+  const dir = tmp();
+  try {
+    const v = provider(dir, { spawn: fakeFfmpeg() });
+    await v.ready;
+    const left = path.join(dir, 'voice', 'recordings', '.parts', '20261025-080000');
+    fs.mkdirSync(left, { recursive: true });
+    ffmpegWav(path.join(left, '001.wav'), 16000);
+    await v.toggle();
+    assert.equal(path.basename(v.get().last.recording), '20261025-080000-recovered.wav');
+    assert.equal(fs.readdirSync(path.join(dir, 'voice', 'recordings', '.parts')).length, 1); // only the new recording
+    await v.recorder.cancel();
+  } finally { delete process.env.ULANZI_LAB_VOICE_DIR; fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('the time limit finishes once the key step holding the lock is done', async () => {
+  const dir = tmp();
+  try {
+    const v = provider(dir, { spawn: fakeFfmpeg() });
+    await v.ready;
+    await v.toggle();
+    const calls = [];
+    v.finish = async (o) => { calls.push(o); return 'finished'; };
+    v.op = 'pause';
+    const done = v.finishWhenFree();
+    await new Promise(r => setTimeout(r, 300));
+    assert.deepEqual(calls, []); // still waiting for the step
+    v.op = null;
+    assert.equal(await done, 'finished');
+    assert.deepEqual(calls, [{ transcribe: true }]);
+    v.recorder = null; // a cancel won meanwhile: nothing left to finish
+    assert.equal(await v.finishWhenFree(), null);
+  } finally { delete process.env.ULANZI_LAB_VOICE_DIR; fs.rmSync(dir, { recursive: true, force: true }); }
 });

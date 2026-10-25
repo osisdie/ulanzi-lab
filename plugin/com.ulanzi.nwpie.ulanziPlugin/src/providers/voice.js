@@ -47,8 +47,7 @@ export class VoiceProvider extends EventEmitter {
   async init() {
     try { Object.assign(this.s, JSON.parse(fs.readFileSync(this.stateFile, 'utf8'))); } catch { /* first run */ }
     this.s.lang = languageOf(this.s.lang).id;
-    const docs = (await this.helper?.request('docs.path'))?.path || null;
-    this.dirs = voiceDirs(voiceRoot({ documents: docs })); // created on first use, not at every plugin start
+    this.dirs = voiceDirs(voiceRoot()); // created on first use, not at every plugin start
     this.s.dir = this.dirs.root;
     this.log('voice: files in', this.dirs.root);
     const saved = await recoverParts(this.dirs, { log: this.log });
@@ -115,6 +114,9 @@ export class VoiceProvider extends EventEmitter {
     if (r?.state === 'recording') { await r.pause(); if (this.recorder === r) this.setPhase('paused', { live: false }); return '⏸ paused'; }
     if (r?.state === 'paused') { if (r.resume()) this.setPhase('recording'); return '● recording'; }
     if (['saving', 'transcribing'].includes(this.s.phase)) return 'busy: wait for the transcript';
+    // Segments a failed save kept: save them now rather than at the next plugin start.
+    const saved = await recoverParts(this.dirs, { log: this.log });
+    if (saved.length) { this.s.last = { recording: saved[saved.length - 1], at: this.now(), txt: null, srt: null, preview: '' }; this.save(); }
     if (!this.device) await this.detect();
     if (this.s.needs.length) { this.changed(); return this.s.needs[0] === 'ffmpeg' ? 'Install ffmpeg: winget install Gyan.FFmpeg' : 'No microphone found'; }
     ensureDirs(this.dirs);
@@ -124,7 +126,7 @@ export class VoiceProvider extends EventEmitter {
     const rec = new Recorder({ ffmpeg: this.ffmpeg, device: this.device, dirs: this.dirs, maxSec: this.maxSec, spawn: this.spawn, now: this.now, log: this.log });
     rec.on('live', () => { this.s.live = true; this.changed(); });
     rec.on('level', (db) => { this.s.levels.push(db); if (this.s.levels.length > LEVELS) this.s.levels.shift(); });
-    rec.on('limit', () => { this.s.message = 'time limit reached'; this.finish({ transcribe: true }); });
+    rec.on('limit', () => { this.s.message = 'time limit reached'; this.finishWhenFree(); });
     rec.on('ended', ({ stderr }) => { this.s.live = false; this.s.message = stderr ? stderr.split('\n').pop().slice(0, 60) : 'microphone stopped'; this.setPhase('paused'); });
     rec.on('error', (e) => { this.recorder = null; this.fail(`ffmpeg: ${e.message}`); });
     this.recorder = rec;
@@ -143,7 +145,8 @@ export class VoiceProvider extends EventEmitter {
       this.recorder = null;
       this.setPhase('saving', { live: false, confirmCancelUntil: 0 });
       try { saved = await r.stop(); } catch (e) {
-        // The segments stay in recordings/.parts; the next plugin start saves them as "-recovered".
+        if (e.empty) { this.play('voiceError'); this.setPhase('idle', { message: 'nothing was recorded' }); return 'nothing was recorded'; }
+        // The segments stay in recordings/.parts; the next ● press (or plugin start) saves them as "-recovered".
         this.fail(`save failed (kept for recovery): ${e.message}`);
         return 'save failed';
       }
@@ -155,6 +158,16 @@ export class VoiceProvider extends EventEmitter {
     this.save();
     if (!doAsr) { this.setPhase('done', { message: 'saved' }); return `saved ${path.basename(saved.file)}`; }
     return this.transcribeFile(saved.file, saved.seconds);
+  }
+
+  /**
+   * The time limit ended ffmpeg on its own; finish as if ✓📝 had been pressed. If a key's step holds the lock right
+   * then (a pause or cancel already under way), wait for it: that step decides, and a cancel leaves nothing to finish.
+   */
+  async finishWhenFree() {
+    for (let i = 0; this.op && i < 40; i++) await new Promise(r => setTimeout(r, 250));
+    if (this.recorder) return this.finish({ transcribe: true });
+    return null;
   }
 
   /** ✕ key: press twice within 5 s to throw the recording away. */

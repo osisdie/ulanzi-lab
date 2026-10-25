@@ -120,7 +120,7 @@ export class Recorder extends EventEmitter {
     } catch (e) {
       fs.rmSync(file, { force: true });
       fs.rmSync(path.join(this.dir, 'ffmpeg.pid'), { force: true });
-      this.reset({ keepParts: true });
+      this.reset({ keepParts: !e.empty }); // nothing was recorded: nothing to keep
       throw e;
     }
     this.reset();

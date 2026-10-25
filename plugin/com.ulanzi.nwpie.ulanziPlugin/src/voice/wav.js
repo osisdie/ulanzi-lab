@@ -68,7 +68,7 @@ export function wavHeader({ channels, sampleRate, bits }, dataSize) {
 /** Join WAV segments (same format) into `out`; segments with no audio are skipped. Resolves to the total seconds. */
 export async function concatWav(files, out) {
   const parts = files.map(f => ({ f, h: wavInfo(f) })).filter(p => p.h && p.h.dataSize > 0);
-  if (!parts.length) throw new Error('no audio recorded');
+  if (!parts.length) throw Object.assign(new Error('no audio recorded'), { empty: true });
   const fmt = parts[0].h;
   for (const p of parts) {
     if (p.h.channels !== fmt.channels || p.h.sampleRate !== fmt.sampleRate || p.h.bits !== fmt.bits) throw new Error(`segment format differs: ${p.f}`);
