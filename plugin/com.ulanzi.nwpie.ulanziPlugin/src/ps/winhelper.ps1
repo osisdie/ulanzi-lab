@@ -9,6 +9,7 @@ $ErrorActionPreference = 'Stop'
 
 Add-Type -AssemblyName System.Runtime.WindowsRuntime
 Add-Type -AssemblyName System.Drawing
+Add-Type -AssemblyName System.Windows.Forms
 Add-Type -Language CSharp -ReferencedAssemblies System.Drawing @"
 using System;
 using System.Collections.Generic;
@@ -210,7 +211,8 @@ while ($true) {
       'audio' { AudioState }
       'audio.set' { AudioSet $req.arg }
       'perf' { Perf }
-      'clip.set' { Set-Clipboard -Value ([string]$req.arg); @{ ok = $true } }
+      # Another app (clipboard history, a manager) may hold the clipboard for a moment: retry 10 x 100 ms.
+      'clip.set' { [System.Windows.Forms.Clipboard]::SetDataObject([string]$req.arg, $true, 10, 100); @{ ok = $true } }
       'mic.default' { @{ name = [UL.Audio]::CaptureName() } }
       default { @{ error = "unknown cmd $($req.cmd)" } }
     }
