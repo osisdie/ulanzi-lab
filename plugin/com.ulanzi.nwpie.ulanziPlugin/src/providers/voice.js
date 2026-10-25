@@ -50,8 +50,7 @@ export class VoiceProvider extends EventEmitter {
     this.dirs = voiceDirs(voiceRoot()); // created on first use, not at every plugin start
     this.s.dir = this.dirs.root;
     this.log('voice: files in', this.dirs.root);
-    const saved = await recoverParts(this.dirs, { log: this.log });
-    if (saved.length) this.s.message = `recovered ${saved.length} recording${saved.length > 1 ? 's' : ''}`;
+    this.noteRecovery(await recoverParts(this.dirs, { live: 'kill', log: this.log }));
     this.refreshLast();
     await this.detect();
     this.changed();
@@ -114,9 +113,9 @@ export class VoiceProvider extends EventEmitter {
     if (r?.state === 'recording') { await r.pause(); if (this.recorder === r) this.setPhase('paused', { live: false }); return '⏸ paused'; }
     if (r?.state === 'paused') { if (r.resume()) this.setPhase('recording'); return '● recording'; }
     if (['saving', 'transcribing'].includes(this.s.phase)) return 'busy: wait for the transcript';
-    // Segments a failed save kept: save them now rather than at the next plugin start.
-    const saved = await recoverParts(this.dirs, { log: this.log });
-    if (saved.length) { this.s.last = { recording: saved[saved.length - 1], at: this.now(), txt: null, srt: null, preview: '' }; this.save(); }
+    // Segments a failed save kept: save them now rather than at the next plugin start. A folder another running
+    // instance is still recording into (Studio vs the dev preview) is skipped, never stopped.
+    const recovered = this.noteRecovery(await recoverParts(this.dirs, { live: 'skip', log: this.log }));
     if (!this.device) await this.detect();
     if (this.s.needs.length) { this.changed(); return this.s.needs[0] === 'ffmpeg' ? 'Install ffmpeg: winget install Gyan.FFmpeg' : 'No microphone found'; }
     ensureDirs(this.dirs);
@@ -133,7 +132,7 @@ export class VoiceProvider extends EventEmitter {
     rec.start();
     this.setPhase('recording', { levels: [], live: false, error: '', message: '', confirmCancelUntil: 0 });
     this.service.ensure(); // warm the speech-to-text service while you talk
-    return '● recording';
+    return recovered ? `● recording (${recovered})` : '● recording';
   }
 
   /** ✓ keys: stop and keep the recording; with `transcribe`, also make the transcript. */
@@ -160,14 +159,30 @@ export class VoiceProvider extends EventEmitter {
     return this.transcribeFile(saved.file, saved.seconds);
   }
 
+  /** Report recoverParts' result on the deck; returns the message, or '' when there was nothing to recover. */
+  noteRecovery({ saved, failed }) {
+    let msg = '';
+    if (saved.length) {
+      this.s.last = { recording: saved[saved.length - 1], at: this.now(), txt: null, srt: null, preview: '' };
+      this.save();
+      msg = `recovered ${saved.length} earlier recording${saved.length > 1 ? 's' : ''}`;
+    }
+    if (failed.length) msg = `${msg ? `${msg}; ` : ''}couldn't save an earlier recording: ${failed[0].error}`;
+    if (msg) { this.s.message = msg; this.log('voice:', msg); }
+    return msg;
+  }
+
   /**
    * The time limit ended ffmpeg on its own; finish as if ✓📝 had been pressed. If a key's step holds the lock right
    * then (a pause or cancel already under way), wait for it: that step decides, and a cancel leaves nothing to finish.
    */
   async finishWhenFree() {
-    for (let i = 0; this.op && i < 40; i++) await new Promise(r => setTimeout(r, 250));
-    if (this.recorder) return this.finish({ transcribe: true });
-    return null;
+    const r = this.recorder;
+    for (let i = 0; this.op && i < 40; i++) await new Promise(res => setTimeout(res, 250));
+    if (!r || this.recorder !== r) return null; // finished, cancelled, or a new recording has started meanwhile
+    const msg = await this.finish({ transcribe: true });
+    if (/^wait:/.test(msg || '')) this.log('voice: time-limit finish skipped,', msg);
+    return msg;
   }
 
   /** ✕ key: press twice within 5 s to throw the recording away. */

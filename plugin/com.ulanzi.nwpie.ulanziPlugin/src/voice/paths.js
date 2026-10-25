@@ -1,6 +1,7 @@
-// Where the Voice profile keeps its files: ~/ulanzi-lab/voice/{recordings,transcripts,tts,voices,inbox} on every OS
-// (C:\Users\<you>\ulanzi-lab\voice on Windows, /mnt/c/Users/<you>/ulanzi-lab/voice from WSL). Not Documents: it is
-// often redirected into OneDrive, and recordings should stay on this machine. ULANZI_LAB_VOICE_DIR overrides the root.
+// Where the Voice profile keeps its files: ~/ulanzi-lab/voice/{recordings,transcripts,tts,voices,inbox} in the home
+// folder of whichever OS runs the plugin (C:\Users\<you>\ulanzi-lab\voice on Windows, browsable from WSL as
+// /mnt/c/Users/<you>/ulanzi-lab/voice). Not Documents: it is often redirected into OneDrive, and recordings should
+// stay on this machine. ULANZI_LAB_VOICE_DIR overrides the root.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';

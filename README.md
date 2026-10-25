@@ -198,7 +198,7 @@ Setup:
 2. In WSL: `services/voice-asr/install.sh` (add `--taigi` for Taiwanese Hokkien). It builds a venv and converts the official [Breeze-ASR-25](https://huggingface.co/MediaTek-Research/Breeze-ASR-25) weights to int8 under `~/.local/share/ulanzi-lab/voice-asr` (about 2 GB).
 3. `npm run profile:voice` creates the profile; switch to it in Ulanzi Studio.
 
-Each recording is saved under `~/ulanzi-lab/voice` (`C:\Users\<you>\ulanzi-lab\voice`; `ULANZI_LAB_VOICE_DIR` changes it) as `recordings/<time>.wav`, with `transcripts/<time>.txt` (punctuated) and `.srt`. The text is also copied to the clipboard. On a laptop CPU, transcription takes about as long as the recording. The service starts on the first key press (about 10 s), and stops after 15 idle minutes or when Studio quits.
+Each recording is saved under `~/ulanzi-lab/voice` (`C:\Users\<you>\ulanzi-lab\voice`; `ULANZI_LAB_VOICE_DIR` changes it) as `recordings/<time>.wav`, with `transcripts/<time>.txt` (punctuated) and `.srt`. (The first build used `Documents\ulanzi-lab\voice`; move anything there into the new folder.) The text is also copied to the clipboard. On a laptop CPU, transcription takes about as long as the recording. The service starts on the first key press (about 10 s), and stops after 15 idle minutes or when Studio quits.
 
 **Code review works the same on GitHub and GitLab:**
 - `glab` / `gh` run inside WSL (in your shell on macOS), so the CLI's own login is used.
