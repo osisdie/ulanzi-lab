@@ -12,7 +12,7 @@ const tri = (x, y, s, dir, fill) => (dir > 0
   : `<path d="M${x} ${y - s} L${x - s * 1.6} ${y} L${x} ${y + s} Z" fill="${fill}"/>`);
 const pauseGlyph = (cx, cy, s, fill) => `<rect x="${cx - s}" y="${cy - s * 1.2}" width="${s * 0.7}" height="${s * 2.4}" rx="2" fill="${fill}"/><rect x="${cx + s * 0.3}" y="${cy - s * 1.2}" width="${s * 0.7}" height="${s * 2.4}" rx="2" fill="${fill}"/>`;
 const speaker = (x, y, s, fill) => `<path d="M${x} ${y - s * 0.45} h${s * 0.5} l${s * 0.7} ${-s * 0.6} v${s * 2.1} l${-s * 0.7} ${-s * 0.6} h${-s * 0.5} Z" fill="${fill}"/>`;
-const micGlyph = (cx, cy, s, fill) => `<rect x="${cx - s * 0.45}" y="${cy - s * 1.2}" width="${s * 0.9}" height="${s * 1.6}" rx="${s * 0.45}" fill="${fill}"/>`
+export const micGlyph = (cx, cy, s, fill) => `<rect x="${cx - s * 0.45}" y="${cy - s * 1.2}" width="${s * 0.9}" height="${s * 1.6}" rx="${s * 0.45}" fill="${fill}"/>`
   + `<path d="M${cx - s * 0.85} ${cy - s * 0.1} a${s * 0.85} ${s * 0.85} 0 0 0 ${s * 1.7} 0" stroke="${fill}" stroke-width="${s * 0.18}" fill="none"/>`
   + `<rect x="${cx - s * 0.09}" y="${cy + s * 0.75}" width="${s * 0.18}" height="${s * 0.5}" fill="${fill}"/>`;
 const slash = (cx, cy, s, color) => `<path d="M${cx - s} ${cy + s} L${cx + s} ${cy - s}" stroke="${color}" stroke-width="${s * 0.22}" stroke-linecap="round"/>`;

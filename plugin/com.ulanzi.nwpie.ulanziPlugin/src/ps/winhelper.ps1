@@ -1,6 +1,7 @@
 # Long-running Windows helper for ulanzi-lab: one JSON request per stdin line, one JSON reply per stdout line.
 #   {"id":1,"cmd":"media"}  {"id":2,"cmd":"media.ctl","arg":"playpause"}  {"id":3,"cmd":"audio"}
 #   {"id":4,"cmd":"audio.set","arg":{"what":"mute"}}  {"id":5,"cmd":"perf"}
+#   {"id":6,"cmd":"clip.set","arg":"text"}  {"id":7,"cmd":"docs.path"}  {"id":8,"cmd":"mic.default"}
 # Media = Windows media session (SMTC: Spotify, browsers/YouTube Music, ...). Audio = Core Audio COM.
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -65,6 +66,7 @@ namespace UL {
     public static bool GetMute(int flow) { bool m; Vol(flow).GetMute(out m); return m; }
     public static void SetMute(int flow, bool m) { Vol(flow).SetMute(m, Guid.Empty); }
     public static bool HasCapture() { try { IMMDevice d; return En().GetDefaultAudioEndpoint(1, 1, out d) == 0 && d != null; } catch { return false; } }
+    public static string CaptureName() { try { IMMDevice d; return En().GetDefaultAudioEndpoint(1, 1, out d) == 0 && d != null ? Name(d) : null; } catch { return null; } }
     static string Name(IMMDevice d) {
       IPropertyStore s; d.OpenPropertyStore(0, out s);
       PROPERTYKEY k = new PROPERTYKEY { fmtid = new Guid("a45c254e-df1c-4efd-8020-67d146a850e0"), pid = 14 };
@@ -208,6 +210,9 @@ while ($true) {
       'audio' { AudioState }
       'audio.set' { AudioSet $req.arg }
       'perf' { Perf }
+      'clip.set' { Set-Clipboard -Value ([string]$req.arg); @{ ok = $true } }
+      'docs.path' { @{ path = [Environment]::GetFolderPath('MyDocuments') } }
+      'mic.default' { @{ name = [UL.Audio]::CaptureName() } }
       default { @{ error = "unknown cmd $($req.cmd)" } }
     }
     $out = @{ id = $req.id; ok = $true; data = $res }

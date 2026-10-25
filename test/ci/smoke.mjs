@@ -11,6 +11,7 @@ process.env.ULANZI_LAB_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'ulanzi-
 const port = 39390;
 const { createRuntime } = await import('../../plugin/com.ulanzi.nwpie.ulanziPlugin/src/runtime.js');
 const { PAGES } = await import('../../plugin/com.ulanzi.nwpie.ulanziPlugin/src/pages.js');
+const { VOICE_PAGES } = await import('../../plugin/com.ulanzi.nwpie.ulanziPlugin/src/voice-pages.js');
 
 const rt = createRuntime({ port });
 try {
@@ -18,7 +19,7 @@ try {
   const get = async (p) => (await fetch(`http://127.0.0.1:${port}${p}`, { signal: AbortSignal.timeout(5000) })).json();
   assert.equal((await get('/health')).ok, true);
   const state = await get('/state');
-  const expected = PAGES.reduce((n, p) => n + p.keys.length, 0);
+  const expected = [...PAGES, ...VOICE_PAGES].reduce((n, p) => n + p.keys.length, 0);
   assert.equal(state.keys.length, expected, 'one preview key per page key');
   for (const k of state.keys) assert.match(String(k.svg), /^<svg/, `${k.ctx} rendered`);
   console.log(`smoke ok on ${process.platform} (node ${process.version}): ${state.keys.length} keys, ${state.sessions.length} sessions`);

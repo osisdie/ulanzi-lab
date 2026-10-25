@@ -3,6 +3,7 @@
 //   focusDone  Pomodoro focus block finished
 //   breakDone  Pomodoro break finished
 //   waiting    reminder while a session waits on you (the HITL nag, when enabled)
+//   recordStart / recordStop / transcriptDone / voiceError   Voice profile: recording and speech-to-text
 // Windows plays .wav only (System.Media.SoundPlayer); macOS plays anything afplay reads (.aiff, .wav, .mp3, .m4a).
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,7 +13,7 @@ import { chime } from './platform.js';
 
 const CONFIG = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'config');
 const OS_FILE = { win32: 'sounds.windows.json', darwin: 'sounds.mac.json' };
-export const SOUND_EVENTS = ['focusDone', 'breakDone', 'waiting'];
+export const SOUND_EVENTS = ['focusDone', 'breakDone', 'waiting', 'recordStart', 'recordStop', 'transcriptDone', 'voiceError'];
 
 /** A JSON object from `file`, or {} (logged) when it is missing, invalid, or not an object: sounds never stop the plugin. */
 const readJson = (file, log) => {

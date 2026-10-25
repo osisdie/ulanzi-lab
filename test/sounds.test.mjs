@@ -14,9 +14,11 @@ test('shipped sound configs: valid JSON with a value for every event', () => {
   }
   assert.deepEqual(loadSounds({ platform: 'win32', override: '' }), {
     focusDone: 'C:\\Windows\\Media\\Alarm01.wav', breakDone: 'C:\\Windows\\Media\\Alarm01.wav', waiting: 'C:\\Windows\\Media\\chimes.wav',
+    recordStart: 'C:\\Windows\\Media\\Speech On.wav', recordStop: 'C:\\Windows\\Media\\Speech Off.wav',
+    transcriptDone: 'C:\\Windows\\Media\\Windows Notify.wav', voiceError: 'C:\\Windows\\Media\\Speech Misrecognition.wav',
   });
   assert.equal(loadSounds({ platform: 'darwin', override: '' }).waiting, '/System/Library/Sounds/Glass.aiff');
-  assert.deepEqual(loadSounds({ platform: 'linux', override: '' }), { focusDone: null, breakDone: null, waiting: null });
+  assert.deepEqual(loadSounds({ platform: 'linux', override: '' }), Object.fromEntries(SOUND_EVENTS.map(e => [e, null])));
 });
 
 test('the default sound files exist on this OS', { skip: !['win32', 'darwin'].includes(process.platform) }, () => {
@@ -27,11 +29,9 @@ test('override file changes only the keys it sets; "off" and "" mute', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ulanzi-sounds-'));
   const file = path.join(dir, 'sounds.json');
   fs.writeFileSync(file, JSON.stringify({ focusDone: 'D:\\sounds\\gong.wav', waiting: 'off', breakDone: '' }));
-  assert.deepEqual(loadSounds({ platform: 'win32', override: file }), { focusDone: 'D:\\sounds\\gong.wav', breakDone: null, waiting: null });
+  assert.deepEqual(loadSounds({ platform: 'win32', override: file }), { ...loadSounds({ platform: 'win32', override: '' }), focusDone: 'D:\\sounds\\gong.wav', breakDone: null, waiting: null });
   fs.writeFileSync(file, JSON.stringify({ breakDone: '/Users/me/ding.mp3' }));
-  assert.deepEqual(loadSounds({ platform: 'darwin', override: file }), {
-    focusDone: '/System/Library/Sounds/Glass.aiff', breakDone: '/Users/me/ding.mp3', waiting: '/System/Library/Sounds/Glass.aiff',
-  });
+  assert.deepEqual(loadSounds({ platform: 'darwin', override: file }), { ...loadSounds({ platform: 'darwin', override: '' }), breakDone: '/Users/me/ding.mp3' });
   const logs = [];
   assert.equal(loadSounds({ platform: 'win32', override: path.join(dir, 'missing.json'), log: (...a) => logs.push(a.join(' ')) }).waiting, 'C:\\Windows\\Media\\chimes.wav');
   assert.match(logs[0], /cannot read/);

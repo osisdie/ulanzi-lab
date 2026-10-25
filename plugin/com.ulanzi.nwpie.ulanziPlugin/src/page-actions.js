@@ -7,6 +7,22 @@ import { osa } from './mac/osa.js';
 
 export const PAGE_ACTIONS = ['media', 'focus', 'hw', 'devops', 'prompt', 'target'];
 
+/** One actions object for deck.js from several (page actions, voice actions…): each action goes to whichever handles it. */
+export function combineActions(...list) {
+  const of = (action) => list.find(x => x.handles(action));
+  return {
+    handles: (a) => !!of(a),
+    bind: (k) => of(k.action)?.bind(k),
+    unbind: (k) => of(k.action)?.unbind(k),
+    render: (k, opts) => of(k.action)?.render(k, opts) ?? null,
+    animated: (k, half) => of(k.action)?.animated(k, half) || false,
+    press: (k, ctx, long) => of(k.action)?.press(k, ctx, long),
+    quiet: () => list.some(x => x.quiet?.()),
+    sources: list.flatMap(x => x.sources || []),
+    stop: () => { for (const x of list) x.stop?.(); },
+  };
+}
+
 const DEFAULT_DISK = IS_WIN ? 'C:' : '/';
 
 export function createPageActions({ media, hw, devops, pomodoro, sessions, toast, play = () => {}, log = () => {}, now = () => Date.now() }) {

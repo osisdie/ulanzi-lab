@@ -1,5 +1,9 @@
 {
   "focusDone": "/System/Library/Sounds/Glass.aiff",
   "breakDone": "/System/Library/Sounds/Glass.aiff",
-  "waiting": "/System/Library/Sounds/Glass.aiff"
+  "waiting": "/System/Library/Sounds/Glass.aiff",
+  "recordStart": "/System/Library/Sounds/Tink.aiff",
+  "recordStop": "/System/Library/Sounds/Pop.aiff",
+  "transcriptDone": "/System/Library/Sounds/Glass.aiff",
+  "voiceError": "/System/Library/Sounds/Basso.aiff"
 }

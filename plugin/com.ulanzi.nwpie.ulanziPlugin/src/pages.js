@@ -131,5 +131,5 @@ export const PAGES = buildPages();
 export const ACTION_NAMES = {
   session: 'Claude Session', hitl: 'Claude HITL', usage: 'Claude Usage', stock: 'Stock Quote',
   sys: 'System Health', wsl: 'WSL', iot: 'AIoT', layout: 'Window Layout',
-  media: 'Media & Audio', focus: 'Focus Timer', hw: 'Hardware', devops: 'DevOps', prompt: 'Claude Prompt', target: 'Claude Target',
+  media: 'Media & Audio', focus: 'Focus Timer', hw: 'Hardware', devops: 'DevOps', prompt: 'Claude Prompt', target: 'Claude Target', voice: 'Voice',
 };

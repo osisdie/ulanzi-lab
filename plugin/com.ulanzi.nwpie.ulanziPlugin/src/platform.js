@@ -47,6 +47,19 @@ export function openUrl(url) {
 /** Show a folder in Explorer / Finder. */
 export function openFolder(dir) { detached(IS_WIN ? 'explorer.exe' : IS_MAC ? 'open' : 'xdg-open', [dir]); }
 
+/** Open a file in its default app. */
+export function openFile(file) { detached(IS_WIN ? 'explorer.exe' : IS_MAC ? 'open' : 'xdg-open', [file]); }
+
+/** Show a file selected in its folder. Explorer wants `/select,"path"` as one unescaped argument. */
+export function revealFile(file) {
+  if (IS_WIN) {
+    const p = spawn('explorer.exe', [`/select,"${file}"`], { detached: true, stdio: 'ignore', windowsHide: true, windowsVerbatimArguments: true });
+    p.on('error', () => {});
+    p.unref();
+  } else if (IS_MAC) detached('open', ['-R', file]);
+  else detached('xdg-open', [path.dirname(file)]);
+}
+
 /** Task Manager / Activity Monitor. */
 export function openSystemMonitor() {
   if (IS_WIN) detached('taskmgr.exe', []);
