@@ -184,6 +184,8 @@ The page buttons (`0_3` / `1_3`) flip pages. Every page keeps a **HITL** key.
 
 A separate profile, **ulanzi-lab Voice**: record from the microphone and get a transcript, all on this PC.
 
+<p align="center"><img src="docs/images/voice-states.png" alt="Voice page: idle, recording, transcribing, done" width="840"></p>
+
 | Row | Keys |
 |---|---|
 | 1 | **● Record** (press again: pause / resume), **Finish** (keep the recording), **Finish + transcript**, **Cancel** (press twice), HITL |
