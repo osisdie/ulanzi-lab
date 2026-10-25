@@ -11,7 +11,7 @@ import { findFfmpeg, parseDshowDevices, pickMic, recordArgs } from '../plugin/co
 import { punctuate, toSrt, transcribe, LANGUAGES } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/voice/asr.js';
 import { postMultipart, retryBusy } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/voice/http.js';
 import { createService, startCommand, shq } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/voice/service.js';
-import { Recorder, recoverParts } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/voice/recorder.js';
+import { Recorder, recoverParts, killOrphan } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/voice/recorder.js';
 import { voiceDirs, ensureDirs, newestFile, stamp } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/voice/paths.js';
 import { VoiceProvider } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/providers/voice.js';
 import { voiceKey } from '../plugin/com.ulanzi.nwpie.ulanziPlugin/src/render-voice.js';
@@ -247,15 +247,24 @@ test('service: start command quoting', () => {
 
 // ---------------------------------------------------------------- recorder
 
-/** A fake ffmpeg: streams level PCM on stdout; on "q" writes `samples` of WAV to its output file and exits 0. */
-function fakeFfmpeg({ samples = 8000, calls = [] } = {}) {
+/**
+ * A fake ffmpeg: streams level PCM on stdout; on "q" writes `samples` of WAV to its output file and exits 0 after
+ * `exitMs`. `ignoreQ` makes it hang until killed; `rates[i]` sets the i-th segment's sample rate.
+ */
+function fakeFfmpeg({ samples = 8000, calls = [], exitMs = 1, ignoreQ = false, rates = [] } = {}) {
   return (cmd, args) => {
     calls.push(args);
     const out = args[args.indexOf('-y') + 1];
+    const rate = rates[calls.length - 1];
     const p = fakeProc();
     p.stdout = new PassThrough();
     setTimeout(() => p.stdout.write(Buffer.alloc(800)), 1);
-    p.stdin.on('data', (d) => { if (String(d).includes('q')) { ffmpegWav(out, samples); setTimeout(() => p.emit('exit', 0), 1); } });
+    const finish = () => {
+      ffmpegWav(out, samples);
+      if (rate) { const b = fs.readFileSync(out); b.writeUInt32LE(rate, 24); fs.writeFileSync(out, b); }
+    };
+    p.kill = () => { finish(); p.emit('exit', null); };
+    p.stdin.on('data', (d) => { if (String(d).includes('q') && !ignoreQ) setTimeout(() => { finish(); p.emit('exit', 0); }, exitMs); });
     return p;
   };
 }
@@ -425,4 +434,135 @@ test('voice actions route through combineActions; layout uses only manifest acti
   for (const [key, action, s] of VOICE_PAGES[0].keys) if (action === 'voice') assert.ok(VOICE_PARTS.includes(s.part), `${key}: ${s.part}`);
   assert.ok(fs.existsSync(new URL('../plugin/com.ulanzi.nwpie.ulanziPlugin/images/voice.svg', import.meta.url)));
   assert.ok(fs.existsSync(new URL('../plugin/com.ulanzi.nwpie.ulanziPlugin/inspector/voice.html', import.meta.url)));
+});
+
+// ---------------------------------------------------------------- review fixes: races, data loss, edge cases
+
+const fakeService = () => ({ ensure: async () => true, check: async () => 'ready', stop() {}, get: () => ({ state: 'ready', error: '' }), on: () => {} });
+function provider(dir, opts = {}) {
+  process.env.ULANZI_LAB_VOICE_DIR = path.join(dir, 'voice');
+  return new VoiceProvider({ platform: 'win32', stateFile: path.join(dir, 'voice.json'), helper: { request: async () => null }, ffmpeg: 'ffmpeg.exe',
+    devices: [{ name: 'Mic', alt: '@m' }], service: fakeService(), clipboard: { set: async () => true }, ...opts });
+}
+
+test('a second ● press while recording starts is refused: one ffmpeg, not two', async () => {
+  const dir = tmp();
+  const calls = [];
+  try {
+    const v = provider(dir, { spawn: fakeFfmpeg({ calls }) });
+    await v.ready;
+    const [a, b] = await Promise.all([v.toggle(), v.toggle()]);
+    assert.deepEqual([a, b].sort(), ['● recording', 'wait: recording in progress'].sort());
+    assert.equal(calls.length, 1);
+    await v.recorder.cancel();
+  } finally { delete process.env.ULANZI_LAB_VOICE_DIR; fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('Finish pressed while a pause is still stopping ffmpeg waits instead of cutting the audio', async () => {
+  const dir = tmp();
+  try {
+    const v = provider(dir, { spawn: fakeFfmpeg({ exitMs: 60, samples: 16000 }) });
+    await v.ready;
+    await v.toggle();
+    const pausing = v.toggle(); // ffmpeg takes 60 ms to exit
+    await new Promise(r => setTimeout(r, 10)); // the pause is under way
+    assert.equal(await v.finish({ transcribe: false }), 'wait: recording in progress');
+    assert.equal(await pausing, '⏸ paused');
+    assert.equal(v.get().phase, 'paused');
+    assert.match(await v.finish({ transcribe: false }), /^saved /);
+    assert.equal(wavInfo(v.get().last.recording).seconds, 1); // the whole segment
+    // Recorder level: a stop during an in-flight stop shares it.
+    const dirs = voiceDirs(path.join(dir, 'r'));
+    ensureDirs(dirs);
+    const rec = new Recorder({ ffmpeg: 'ffmpeg', device: { name: 'Mic' }, dirs, spawn: fakeFfmpeg({ exitMs: 40, samples: 16000 }) });
+    rec.start();
+    const p = rec.pause();
+    const r = await rec.stop();
+    await p;
+    assert.equal(r.seconds, 1);
+  } finally { delete process.env.ULANZI_LAB_VOICE_DIR; fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('a failed join keeps the segments for recovery and removes the partial output', async () => {
+  const dir = tmp();
+  const dirs = voiceDirs(dir);
+  ensureDirs(dirs);
+  const rec = new Recorder({ ffmpeg: 'ffmpeg', device: { name: 'Mic' }, dirs, spawn: fakeFfmpeg({ rates: [16000, 8000] }) });
+  rec.start();
+  await rec.pause();
+  rec.resume();
+  await assert.rejects(rec.stop(), /format differs/);
+  const [id] = fs.readdirSync(dirs.parts);
+  assert.deepEqual(fs.readdirSync(path.join(dirs.parts, id)).sort(), ['001.wav', '002.wav']); // no pid file left
+  assert.deepEqual(fs.readdirSync(dirs.recordings).filter(f => f.endsWith('.wav')), []);
+  assert.equal(rec.state, 'idle');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('recorder: a hung ffmpeg is killed after the grace period; ffmpeg ending on its own is reported', async () => {
+  const dir = tmp();
+  const dirs = voiceDirs(dir);
+  ensureDirs(dirs);
+  const hung = new Recorder({ ffmpeg: 'ffmpeg', device: { name: 'Mic' }, dirs, spawn: fakeFfmpeg({ ignoreQ: true, samples: 8000 }), stopGraceMs: 20 });
+  hung.start();
+  const r = await hung.stop();
+  assert.equal(r.seconds, 0.5);
+  let t = 0;
+  const procs = [];
+  const own = new Recorder({ ffmpeg: 'ffmpeg', device: { name: 'Mic' }, dirs, maxSec: 10, now: () => t, spawn: (c, a) => { const p = fakeFfmpeg()(c, a); procs.push(p); return p; } });
+  own.start();
+  const ended = new Promise(res => own.once('ended', res));
+  t = 3000;
+  procs[0].emit('exit', 1); // the microphone went away
+  assert.equal((await ended).code, 1);
+  assert.equal(own.state, 'paused');
+  own.resume();
+  const limit = new Promise(res => own.once('limit', res));
+  t = 10000;
+  procs[1].emit('exit', 0); // -t reached
+  await limit;
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('killOrphan kills only an ffmpeg writing into this recording\'s .parts folder', async () => {
+  const run = (out) => (cmd, args, opts, cb) => { const done = typeof opts === 'function' ? opts : cb; done(null, cmd === 'taskkill' ? '' : out); };
+  const ours = 'C:\\ffmpeg.exe -f dshow -i audio=@m C:\\v\\recordings\\.parts\\20261025-090000\\001.wav';
+  assert.equal(await killOrphan(1234, { id: '20261025-090000', platform: 'win32', run: run(ours) }), true);
+  assert.equal(await killOrphan(1234, { id: '20261025-090000', platform: 'win32', run: run('ffmpeg.exe -i movie.mkv out.mp4') }), false);
+  assert.equal(await killOrphan(1234, { id: '20261025-090000', platform: 'win32', run: run('C:\\notepad.exe') }), false);
+  assert.equal(await killOrphan('12; rm -rf /', { id: 'x', platform: 'win32', run: () => assert.fail('must not run') }), false);
+});
+
+test('a missing model is a 404 (not retried as busy); a service dying at start reports why', async () => {
+  const dir = tmp();
+  const f = path.join(dir, 'r.wav');
+  ffmpegWav(f, 1600);
+  const asr = await fakeAsr([[404, { detail: 'model breeze-asr-26 is not installed; run services/voice-asr/install.sh --taigi' }]]);
+  await assert.rejects(transcribe(f, { url: asr.url, lang: 'nan' }), /ASR 404: .*--taigi/);
+  assert.equal(asr.seen.length, 1);
+  await asr.close();
+  const svc = createService({ name: 'asr', url: 'http://x', command: 'c', platform: 'linux', pollMs: 1, startTimeoutMs: 1000, health: async () => false,
+    spawn: () => { const p = fakeProc(); setTimeout(() => { p.stderr.write('bash: /x/start.sh: No such file or directory\n'); setTimeout(() => p.emit('exit', 127), 2); }, 2); return p; } });
+  assert.equal(await svc.ensure(), false);
+  assert.equal(svc.get().error, 'exit 127: bash: /x/start.sh: No such file or directory');
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('wav: half a trailing sample is ignored; same-second recordings get distinct names', async () => {
+  const dir = tmp();
+  const f = path.join(dir, 'odd.wav');
+  ffmpegWav(f, 100);
+  fs.appendFileSync(f, Buffer.from([7]));
+  assert.equal(wavInfo(f).dataSize, 200);
+  const dirs = voiceDirs(dir);
+  ensureDirs(dirs);
+  const t = Date.parse('2026-10-25T10:00:00');
+  const names = [];
+  for (let i = 0; i < 2; i++) {
+    const rec = new Recorder({ ffmpeg: 'ffmpeg', device: { name: 'Mic' }, dirs, now: () => t, spawn: fakeFfmpeg() });
+    rec.start();
+    names.push(path.basename((await rec.stop()).file));
+  }
+  assert.deepEqual(names, ['20261025-100000.wav', '20261025-100000-2.wav']);
+  fs.rmSync(dir, { recursive: true, force: true });
 });

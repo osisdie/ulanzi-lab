@@ -9,13 +9,13 @@ import { recordArgs } from './ffmpeg.js';
 import { concatWav, fixWavHeader, pcmLevelDb } from './wav.js';
 import { stamp } from './paths.js';
 
-const STOP_GRACE_MS = 3000;
 
 export class Recorder extends EventEmitter {
   /** `device` is a pickMic() result; `maxSec` caps the whole recording across pauses. */
-  constructor({ ffmpeg, device, dirs, maxSec = 3600, spawn = nodeSpawn, now = () => Date.now(), log = () => {} }) {
+  constructor({ ffmpeg, device, dirs, maxSec = 3600, spawn = nodeSpawn, now = () => Date.now(), log = () => {}, stopGraceMs = 3000 }) {
     super();
-    Object.assign(this, { ffmpeg, device, dirs, maxSec, spawn, now, log });
+    Object.assign(this, { ffmpeg, device, dirs, maxSec, spawn, now, log, stopGraceMs });
+    this.stopping = null; // the in-flight stopSegment(), so a second stop waits for the same ffmpeg exit
     this.state = 'idle'; // idle | recording | paused
     this.id = null;
     this.proc = null;
@@ -29,7 +29,10 @@ export class Recorder extends EventEmitter {
 
   start() {
     if (this.state !== 'idle') return false;
-    this.id = stamp(new Date(this.now()));
+    // Two recordings within one second would share a name: add a suffix rather than overwrite.
+    const base = stamp(new Date(this.now()));
+    this.id = base;
+    for (let n = 2; fs.existsSync(path.join(this.dirs.recordings, `${this.id}.wav`)) || fs.existsSync(path.join(this.dirs.parts, this.id)); n++) this.id = `${base}-${n}`;
     this.dir = path.join(this.dirs.parts, this.id);
     fs.mkdirSync(this.dir, { recursive: true });
     this.segments = [];
@@ -70,19 +73,24 @@ export class Recorder extends EventEmitter {
     });
   }
 
-  /** Stop the running segment cleanly ("q"), killing it if it doesn't finish in time. */
+  /**
+   * Stop the running segment cleanly ("q"), killing it if it doesn't finish in time. Resolves once ffmpeg has
+   * exited and the file is complete; a call while a stop is in flight gets the same promise.
+   */
   stopSegment() {
+    if (this.stopping) return this.stopping;
     const p = this.proc;
     if (!p) return Promise.resolve();
     this.proc = null;
     this.doneMs += this.now() - this.segStart;
     const file = this.segments[this.segments.length - 1];
-    return new Promise((resolve) => {
+    this.stopping = new Promise((resolve) => {
       const done = () => { clearTimeout(timer); try { fixWavHeader(file); } catch { /* nothing written */ } resolve(); };
-      const timer = setTimeout(() => { try { p.kill(); } catch { /* gone */ } }, STOP_GRACE_MS);
+      const timer = setTimeout(() => { try { p.kill(); } catch { /* gone */ } }, this.stopGraceMs);
       p.once('exit', done);
       try { p.stdin.write('q'); } catch { p.kill(); }
-    });
+    }).finally(() => { this.stopping = null; });
+    return this.stopping;
   }
 
   async pause() {
@@ -98,17 +106,25 @@ export class Recorder extends EventEmitter {
     return true;
   }
 
-  /** Finish: join the segments into recordings/<stamp>.wav. Resolves { file, seconds }. */
+  /**
+   * Finish: join the segments into recordings/<stamp>.wav. Resolves { file, seconds }. If joining fails (disk full,
+   * a locked file), the segments stay in .parts for recoverParts on the next start; only the partial output goes.
+   */
   async stop() {
     if (this.state === 'idle') return null;
     await this.stopSegment();
     const file = path.join(this.dirs.recordings, `${this.id}.wav`);
+    let seconds;
     try {
-      const seconds = await concatWav(this.segments, file);
-      return { file, seconds };
-    } finally {
-      this.reset();
+      seconds = await concatWav(this.segments, file);
+    } catch (e) {
+      fs.rmSync(file, { force: true });
+      fs.rmSync(path.join(this.dir, 'ffmpeg.pid'), { force: true });
+      this.reset({ keepParts: true });
+      throw e;
     }
+    this.reset();
+    return { file, seconds };
   }
 
   async cancel() {
@@ -118,27 +134,31 @@ export class Recorder extends EventEmitter {
     return true;
   }
 
-  reset() {
-    if (this.dir) fs.rmSync(this.dir, { recursive: true, force: true });
+  reset({ keepParts = false } = {}) {
+    if (this.dir && !keepParts) fs.rmSync(this.dir, { recursive: true, force: true });
     Object.assign(this, { state: 'idle', id: null, dir: null, proc: null, segments: [], doneMs: 0, live: false });
   }
 }
 
-/** Kill `pid` if it is still an ffmpeg (pids get reused, so check the image name first). */
-export function killOrphan(pid, { platform = process.platform, run = execFile } = {}) {
+/**
+ * Kill `pid` only if it is still our recorder: an ffmpeg whose command line writes into `.parts/<id>`. After a reboot
+ * the pid may belong to anything, even another ffmpeg, so the image name alone is not enough.
+ */
+export function killOrphan(pid, { id, platform = process.platform, run = execFile } = {}) {
   return new Promise((resolve) => {
-    if (!pid) return resolve(false);
+    const n = Number(pid);
+    if (!Number.isInteger(n) || n <= 0 || !id) return resolve(false);
+    const ours = (cmdline) => /ffmpeg/i.test(cmdline) && cmdline.includes('.parts') && cmdline.includes(id);
     if (platform !== 'win32') {
-      try { process.kill(pid, 0); } catch { return resolve(false); }
-      run('ps', ['-p', String(pid), '-o', 'comm='], (err, out) => {
-        if (err || !/ffmpeg/.test(String(out))) return resolve(false);
-        try { process.kill(pid); resolve(true); } catch { resolve(false); }
+      run('ps', ['-p', String(n), '-o', 'args='], (err, out) => {
+        if (err || !ours(String(out))) return resolve(false);
+        try { process.kill(n); resolve(true); } catch { resolve(false); }
       });
       return;
     }
-    run('tasklist', ['/FI', `PID eq ${pid}`, '/NH', '/FO', 'CSV'], { windowsHide: true }, (err, out) => {
-      if (err || !/"ffmpeg\.exe"/i.test(String(out))) return resolve(false);
-      run('taskkill', ['/PID', String(pid), '/F'], { windowsHide: true }, (e) => resolve(!e));
+    run('powershell.exe', ['-NoProfile', '-Command', `(Get-CimInstance Win32_Process -Filter "ProcessId=${n}").CommandLine`], { windowsHide: true }, (err, out) => {
+      if (err || !ours(String(out))) return resolve(false);
+      run('taskkill', ['/PID', String(n), '/F'], { windowsHide: true }, (e) => resolve(!e));
     });
   });
 }
@@ -155,7 +175,7 @@ export async function recoverParts(dirs, { kill = killOrphan, log = () => {} } =
     const dir = path.join(dirs.parts, id);
     try {
       const pidFile = path.join(dir, 'ffmpeg.pid');
-      if (fs.existsSync(pidFile) && await kill(Number(fs.readFileSync(pidFile, 'utf8')))) await new Promise(r => setTimeout(r, 500));
+      if (fs.existsSync(pidFile) && await kill(Number(fs.readFileSync(pidFile, 'utf8')), { id })) await new Promise(r => setTimeout(r, 500));
       const segs = fs.readdirSync(dir).filter(f => f.endsWith('.wav')).sort().map(f => path.join(dir, f));
       for (const f of segs) { try { fixWavHeader(f); } catch { /* unreadable */ } }
       const file = path.join(dirs.recordings, `${id}-recovered.wav`);

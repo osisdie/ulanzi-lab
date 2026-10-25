@@ -42,9 +42,12 @@ export function createService({ name, url, command, distro = null, platform = pr
     p.stdin?.on('error', () => {});
     p.on('error', (e) => { log(`${name}: spawn failed`, e.message); set('error', e.message); });
     p.on('exit', (code) => {
-      log(`${name}: exited`, code, stderr.trim().split('\n').pop() || '');
+      const last = stderr.trim().split('\n').pop() || '';
+      log(`${name}: exited`, code, last);
       if (proc === p) proc = null;
-      if (st.state !== 'off') set(code === 3 ? 'error' : 'off', code === 3 ? 'not installed' : '');
+      if (code === 3) set('error', 'not installed');
+      else if (st.state === 'starting') set('error', `exit ${code}${last ? `: ${last.slice(0, 80)}` : ''}`); // died before /health
+      else if (st.state !== 'off') set('off');
     });
     return p;
   }

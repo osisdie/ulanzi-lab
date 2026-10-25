@@ -40,6 +40,7 @@ export class VoiceProvider extends EventEmitter {
       confirmCancelUntil: 0, needs: [], dir: '',
     };
     this.recorder = null;
+    this.op = null; // the recording step in flight (start / pause / resume / finish / cancel): one at a time
     this.ready = this.supported ? this.init() : Promise.resolve();
   }
 
@@ -92,12 +93,26 @@ export class VoiceProvider extends EventEmitter {
 
   // ------------------------------------------------------------ recording
 
+  /**
+   * Run one recording step at a time. Key presses arrive concurrently (deck.js doesn't queue them), and each step
+   * awaits ffmpeg, so a second press during a step must not start another ffmpeg or join a file still being written.
+   */
+  async exclusive(name, fn) {
+    if (this.op) return `wait: ${this.op} in progress`;
+    this.op = name;
+    try { return await fn(); } finally { this.op = null; }
+  }
+
   /** ● key: start, pause, resume. */
   async toggle() {
     if (!this.supported) return 'Voice: Windows only for now';
     await this.ready;
+    return this.exclusive('recording', () => this.toggleNow());
+  }
+
+  async toggleNow() {
     const r = this.recorder;
-    if (r?.state === 'recording') { await r.pause(); this.setPhase('paused', { live: false }); return '⏸ paused'; }
+    if (r?.state === 'recording') { await r.pause(); if (this.recorder === r) this.setPhase('paused', { live: false }); return '⏸ paused'; }
     if (r?.state === 'paused') { if (r.resume()) this.setPhase('recording'); return '● recording'; }
     if (['saving', 'transcribing'].includes(this.s.phase)) return 'busy: wait for the transcript';
     if (!this.device) await this.detect();
@@ -121,12 +136,20 @@ export class VoiceProvider extends EventEmitter {
 
   /** ✓ keys: stop and keep the recording; with `transcribe`, also make the transcript. */
   async finish({ transcribe: doAsr = true } = {}) {
-    const r = this.recorder;
-    if (!r || r.state === 'idle') return 'not recording';
-    this.recorder = null;
-    this.setPhase('saving', { live: false, confirmCancelUntil: 0 });
-    let saved;
-    try { saved = await r.stop(); } catch (e) { this.fail(`save failed: ${e.message}`); return 'save failed'; }
+    let saved = null;
+    const busy = await this.exclusive('saving', async () => {
+      const r = this.recorder;
+      if (!r || r.state === 'idle') return 'not recording';
+      this.recorder = null;
+      this.setPhase('saving', { live: false, confirmCancelUntil: 0 });
+      try { saved = await r.stop(); } catch (e) {
+        // The segments stay in recordings/.parts; the next plugin start saves them as "-recovered".
+        this.fail(`save failed (kept for recovery): ${e.message}`);
+        return 'save failed';
+      }
+      return null;
+    });
+    if (busy) return busy;
     this.play('recordStop');
     this.s.last = { recording: saved.file, seconds: Math.round(saved.seconds), at: this.now(), txt: null, srt: null, preview: '' };
     this.save();
@@ -139,11 +162,14 @@ export class VoiceProvider extends EventEmitter {
     const r = this.recorder;
     if (!r || r.state === 'idle') return 'not recording';
     if (this.s.confirmCancelUntil <= this.now()) { this.s.confirmCancelUntil = this.now() + CONFIRM_MS; this.changed(); return 'Press ✕ again within 5 s to discard'; }
-    this.s.confirmCancelUntil = 0;
-    this.recorder = null;
-    await r.cancel();
-    this.setPhase('idle', { live: false, message: 'discarded' });
-    return 'recording discarded';
+    return this.exclusive('cancel', async () => {
+      if (this.recorder !== r) return 'not recording';
+      this.s.confirmCancelUntil = 0;
+      this.recorder = null;
+      await r.cancel();
+      this.setPhase('idle', { live: false, message: 'discarded' });
+      return 'recording discarded';
+    });
   }
 
   // ------------------------------------------------------------ transcripts
@@ -183,6 +209,7 @@ export class VoiceProvider extends EventEmitter {
     if (!this.supported) return 'Voice: Windows only for now';
     await this.ready;
     if (this.recorder) return 'recording: finish first';
+    if (this.op || ['saving', 'transcribing'].includes(this.s.phase)) return 'busy: wait for the transcript';
     const file = this.s.last?.recording && fs.existsSync(this.s.last.recording) ? this.s.last.recording : newestFile(this.dirs.recordings, ['.wav']);
     if (!file) return 'no recording yet';
     return this.transcribeFile(file);

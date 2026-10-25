@@ -33,8 +33,11 @@ function readHead(file) {
 export function wavInfo(file) {
   const h = parseWav(readHead(file));
   if (!h) return null;
+  // Whole samples only: a killed ffmpeg can leave half a sample, which would shift every later segment by a byte.
+  const block = h.channels * (h.bits / 8);
   const dataSize = Math.max(0, fs.statSync(file).size - h.dataOffset);
-  return { ...h, dataSize, seconds: dataSize / (h.sampleRate * h.channels * (h.bits / 8)) };
+  const whole = dataSize - (dataSize % block);
+  return { ...h, dataSize: whole, seconds: whole / (h.sampleRate * block) };
 }
 
 /** Rewrite the RIFF and data sizes from the file length (ffmpeg writes them last, so a killed ffmpeg leaves 0 / garbage). */
@@ -73,7 +76,7 @@ export async function concatWav(files, out) {
   const total = parts.reduce((n, p) => n + p.h.dataSize, 0);
   const ws = fs.createWriteStream(out);
   ws.write(wavHeader(fmt, total));
-  for (const p of parts) await pipeline(fs.createReadStream(p.f, { start: p.h.dataOffset }), ws, { end: false });
+  for (const p of parts) await pipeline(fs.createReadStream(p.f, { start: p.h.dataOffset, end: p.h.dataOffset + p.h.dataSize - 1 }), ws, { end: false });
   await new Promise((resolve, reject) => ws.end((e) => (e ? reject(e) : resolve())));
   return total / (fmt.sampleRate * fmt.channels * (fmt.bits / 8));
 }

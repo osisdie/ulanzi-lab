@@ -17,7 +17,7 @@ import threading
 import time
 
 import uvicorn
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 HOME = os.path.expanduser(os.environ.get("VOICE_ASR_HOME", "~/.local/share/ulanzi-lab/voice-asr"))
@@ -35,6 +35,21 @@ args = ap.parse_args()
 
 app = FastAPI()
 lock = threading.Lock()
+
+
+@app.middleware("http")
+async def guard(request: Request, call_next):
+    # Browsers send Origin on cross-site POSTs; the plugin never does. Without this, any web page could make the
+    # service transcribe (a simple multipart POST needs no preflight).
+    if request.headers.get("origin"):
+        return JSONResponse({"detail": "cross-origin requests are not accepted"}, status_code=403)
+    # Reject oversized uploads before the multipart parser spools them to disk.
+    length = request.headers.get("content-length", "")
+    if length.isdigit() and int(length) > MAX_BYTES:
+        return JSONResponse({"detail": "file too large (500 MB max)"}, status_code=413)
+    return await call_next(request)
+
+
 state = {"name": None, "model": None, "last": time.monotonic()}
 
 
@@ -44,10 +59,11 @@ def load(name):
         return state["model"]
     path = os.path.join(args.models, MODELS[name])
     if not os.path.isfile(os.path.join(path, "model.bin")):
-        raise HTTPException(503, f"model {name} is not installed ({path}); run services/voice-asr/install.sh")
+        flag = " --taigi" if name == "breeze-asr-26" else ""
+        raise HTTPException(404, f"model {name} is not installed; run services/voice-asr/install.sh{flag}")
     from faster_whisper import WhisperModel  # slow import; keep /health instant
 
-    state["model"] = None  # free the old one first
+    state["name"], state["model"] = None, None  # free the old one first; a failed load leaves nothing half-set
     state["model"] = WhisperModel(path, device="cpu", compute_type="int8", cpu_threads=args.threads)
     state["name"] = name
     return state["model"]
