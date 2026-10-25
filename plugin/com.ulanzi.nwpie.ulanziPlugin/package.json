@@ -6,7 +6,7 @@
   "description": "ulanzi-lab: Claude Code HITL/usage deck + dev dashboard for Ulanzi D200X (Windows + WSL, macOS)",
   "main": "app.js",
   "dependencies": {
-    "koffi": "^2.9.0",
+    "koffi": "^3.3.3",
     "ws": "^8.18.0"
   }
 }
