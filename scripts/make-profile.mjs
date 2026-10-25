@@ -5,13 +5,14 @@
 //
 // Default layout: the "ulanzi-lab" profile from plugin/.../src/pages.js.
 // --layout <module> builds another plugin's profile instead.
-// A layout module exports PROFILE = { name, icon, pages, plugin: { uuid, name, folder, src, actionNames, iconFor(action) } }.
+// A layout module exports PROFILE = { name, icon, pages, plugin: { uuid, name, folder, src, actionNames, iconFor(action) } }
+// and optionally legacy: { name, marker }, an older generated profile of the same layout that it replaces in place.
 //
 // - Writes a NEW profile folder into %APPDATA%\Ulanzi\UlanziDeck\ProfilesV2 (macOS: ~/Library/Application Support/
 //   Ulanzi/UlanziDeck/ProfilesV2); existing profiles are untouched.
 //   Re-running replaces only the profile this script generated under the same name (marked with .ulanzi-lab).
 // - Ulanzi Studio is stopped while writing and restarted afterwards (it caches profiles in memory).
-// - --activate also sets it as the current profile in Config\setting.json (the first backup is kept).
+// - --activate also makes it the current profile (Config\setting_source.json and setting.json; first backups kept).
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -24,11 +25,11 @@ const MAC = process.platform === 'darwin';
 const ROOT = MAC ? path.join(os.homedir(), 'Library', 'Application Support', 'Ulanzi', 'UlanziDeck') : path.join(process.env.APPDATA, 'Ulanzi', 'UlanziDeck');
 const PROFILES = path.join(ROOT, 'ProfilesV2');
 const SETTING = path.join(ROOT, 'Config', 'setting.json');
+const SETTING_SOURCE = path.join(ROOT, 'Config', 'setting_source.json');
 const EXE = 'C:\\Program Files (x86)\\Ulanzi Studio\\UlanziDeck.exe';
 const MAC_APP = '/Applications/Ulanzi Studio.app';
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MARKER = '.ulanzi-lab';
-const LEGACY = { name: 'ulanzi_lab', marker: '.ulanzi_lab' }; // pre-rename profile, replaced in place
 const fwd = (p) => p.replace(/\\/g, '/');
 
 async function loadLayout() {
@@ -38,6 +39,7 @@ async function loadLayout() {
   const { PAGES, PLUGIN_UUID, ACTION_NAMES } = await import(pathToFileURL(path.join(src, 'src', 'pages.js')).href);
   return {
     name: 'ulanzi-lab', icon: path.join(src, 'images', 'plugin.svg'), pages: PAGES,
+    legacy: { name: 'ulanzi_lab', marker: '.ulanzi_lab' }, // before the rename; other layouts must never take it over
     plugin: { uuid: PLUGIN_UUID, name: 'ulanzi-lab', folder: 'com.ulanzi.nwpie.ulanziPlugin', src, actionNames: ACTION_NAMES, iconFor: (a) => `images/${a}.svg` },
   };
 }
@@ -83,9 +85,11 @@ const action = (name, settings) => ({
   ViewParam: [{ Icon: fwd(path.join(PLUGIN_INSTALLED, PLUGIN.iconFor(name))), IconRel: '' }],
 });
 
-// Replace the profile this script generated under the same name, never a user-made one.
+// Replace the profile this script generated for this layout (same name, or the layout's legacy name), never a user-made
+// one or another layout's.
+const LEGACY = LAYOUT.legacy;
 const prev = manifests.find(x => x.m.Name === NAME && fs.existsSync(path.join(PROFILES, x.dir, MARKER)))
-  || manifests.find(x => x.m.Name === LEGACY.name && fs.existsSync(path.join(PROFILES, x.dir, LEGACY.marker)));
+  || (LEGACY && manifests.find(x => x.m.Name === LEGACY.name && fs.existsSync(path.join(PROFILES, x.dir, LEGACY.marker))));
 const clash = manifests.find(x => x.m.Name === NAME && x !== prev);
 if (clash) throw new Error(`a profile named "${NAME}" already exists (${clash.dir}) and was not made by this script`);
 const profileId = prev ? prev.dir.replace('.ulanziProfile', '') : crypto.randomUUID();
@@ -104,7 +108,10 @@ const iconFile = 'icon' + path.extname(LAYOUT.icon);
 const profileManifest = { Device: device, Icon: iconFile, Name: NAME, Pages: { Current: pageIds[0], Pages: pageIds }, Version: 2 };
 
 if (has('--dry-run')) {
-  console.log(JSON.stringify({ dir, profileManifest, page1: pages[0].manifest }, null, 2));
+  // What a real run would replace, and whether it would change Studio's current profile.
+  const replaces = prev ? { dir: prev.dir, name: prev.m.Name, matchedBy: prev.m.Name === NAME ? 'name' : 'legacy name' } : null;
+  const selects = has('--activate') ? 'always' : prev && prev.m.Name !== NAME ? `where "${prev.m.Name}" is selected` : 'no';
+  console.log(JSON.stringify({ dir, replaces, selects, profileManifest, page1: pages[0].manifest }, null, 2));
   process.exit(0);
 }
 
@@ -140,14 +147,37 @@ for (const p of pages) {
 }
 console.log(`${prev ? 'updated' : 'created'} profile "${NAME}" → ${dir}`);
 
-if (has('--activate')) {
-  const raw = fs.readFileSync(SETTING, 'utf8');
-  if (![`${SETTING}.bak.ulanzi-lab`, `${SETTING}.bak.ulanzi_lab`].some(f => fs.existsSync(f))) fs.writeFileSync(`${SETTING}.bak.ulanzi-lab`, raw); // keep the first (pre-lab) backup
-  const s = JSON.parse(raw);
-  s.CurrentProfile = NAME;
-  fs.writeFileSync(SETTING, JSON.stringify(s, null, 4));
-  console.log(`set CurrentProfile = ${NAME}`);
+// Studio selects the current profile by name: Studio 3.4 per device in setting_source.json, older builds in setting.json.
+// --activate selects this profile. Without it, a replaced profile that was selected under its old name follows the
+// rename, or Studio creates an empty profile under the old name on its next start. The first backup of each file is kept.
+const SELECTIONS = [
+  { file: SETTING_SOURCE, set: (s, from) => {
+    // This deck by UUID; by model only if no entry has the UUID (another D200X can't load this deck's profile).
+    const all = s.Devices || [];
+    const mine = all.filter(d => d.CurrentDevice === device.UUID);
+    for (const d of mine.length ? mine : all.filter(d => d.DeviceType === device.Model)) if (from === null || d.CurrentProfile === from) d.CurrentProfile = NAME;
+  } },
+  { file: SETTING, set: (s, from) => { if (from === null || s.CurrentProfile === from) s.CurrentProfile = NAME; } },
+];
+function select(from) {
+  let changed = 0;
+  for (const { file, set } of SELECTIONS) {
+    let raw, s;
+    try { raw = fs.readFileSync(file, 'utf8'); } catch { continue; } // this Studio build doesn't use it
+    try { s = JSON.parse(raw.replace(/^\uFEFF/, '')); } catch { console.warn(`${path.basename(file)} is not JSON: left alone`); continue; }
+    const before = JSON.stringify(s);
+    set(s, from);
+    if (JSON.stringify(s) === before) continue;
+    if (![`${file}.bak.ulanzi-lab`, `${file}.bak.ulanzi_lab`].some(f => fs.existsSync(f))) fs.writeFileSync(`${file}.bak.ulanzi-lab`, raw);
+    fs.writeFileSync(`${file}.tmp`, JSON.stringify(s, null, raw.includes('\n') ? 4 : 0)); // keep Studio's own layout
+    fs.renameSync(`${file}.tmp`, file); // a crash mid-write can't leave Studio a truncated file
+    console.log(`${path.basename(file)}: CurrentProfile = ${NAME}`);
+    changed++;
+  }
+  return changed;
 }
+if (has('--activate') && !select(null)) console.log(`no selection file changed: select "${NAME}" in Ulanzi Studio`);
+else if (prev && prev.m.Name !== NAME) select(prev.m.Name);
 
 if (wasRunning && !has('--no-restart')) {
   if (MAC) spawn('open', ['-a', MAC_APP], { detached: true, stdio: 'ignore' }).unref();
