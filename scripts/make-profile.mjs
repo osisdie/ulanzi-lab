@@ -12,7 +12,7 @@
 //   Ulanzi/UlanziDeck/ProfilesV2); existing profiles are untouched.
 //   Re-running replaces only the profile this script generated under the same name (marked with .ulanzi-lab).
 // - Ulanzi Studio is stopped while writing and restarted afterwards (it caches profiles in memory).
-// - --activate also sets it as the current profile in Config\setting.json (the first backup is kept).
+// - --activate also makes it the current profile (Config\setting_source.json and setting.json; first backups kept).
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -25,6 +25,7 @@ const MAC = process.platform === 'darwin';
 const ROOT = MAC ? path.join(os.homedir(), 'Library', 'Application Support', 'Ulanzi', 'UlanziDeck') : path.join(process.env.APPDATA, 'Ulanzi', 'UlanziDeck');
 const PROFILES = path.join(ROOT, 'ProfilesV2');
 const SETTING = path.join(ROOT, 'Config', 'setting.json');
+const SETTING_SOURCE = path.join(ROOT, 'Config', 'setting_source.json');
 const EXE = 'C:\\Program Files (x86)\\Ulanzi Studio\\UlanziDeck.exe';
 const MAC_APP = '/Applications/Ulanzi Studio.app';
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -143,18 +144,28 @@ for (const p of pages) {
 }
 console.log(`${prev ? 'updated' : 'created'} profile "${NAME}" → ${dir}`);
 
-// Studio selects the current profile by name. If it names the legacy profile just renamed here, follow the rename, or
-// Studio creates an empty profile under the old name on its next start.
-const currentProfile = () => { try { return JSON.parse(fs.readFileSync(SETTING, 'utf8')).CurrentProfile; } catch { return null; } };
-const followRename = prev && prev.m.Name !== NAME && currentProfile() === prev.m.Name;
-if (has('--activate') || followRename) {
-  const raw = fs.readFileSync(SETTING, 'utf8');
-  if (![`${SETTING}.bak.ulanzi-lab`, `${SETTING}.bak.ulanzi_lab`].some(f => fs.existsSync(f))) fs.writeFileSync(`${SETTING}.bak.ulanzi-lab`, raw); // keep the first (pre-lab) backup
-  const s = JSON.parse(raw);
-  s.CurrentProfile = NAME;
-  fs.writeFileSync(SETTING, JSON.stringify(s, null, 4));
-  console.log(`set CurrentProfile = ${NAME}`);
+// Studio selects the current profile by name: Studio 3.4 per device in setting_source.json, older builds in setting.json.
+// --activate selects this profile. Without it, a replaced profile that was selected under its old name follows the
+// rename, or Studio creates an empty profile under the old name on its next start. The first backup of each file is kept.
+const SELECTIONS = [
+  { file: SETTING_SOURCE, set: (s, from) => { for (const d of s.Devices || []) if ((d.CurrentDevice === device.UUID || d.DeviceType === device.Model) && (from === null || d.CurrentProfile === from)) d.CurrentProfile = NAME; } },
+  { file: SETTING, set: (s, from) => { if (from === null || s.CurrentProfile === from) s.CurrentProfile = NAME; } },
+];
+function select(from) {
+  for (const { file, set } of SELECTIONS) {
+    let raw, s;
+    try { raw = fs.readFileSync(file, 'utf8'); } catch { continue; } // this Studio build doesn't use it
+    try { s = JSON.parse(raw); } catch { console.warn(`${path.basename(file)} is not JSON: left alone`); continue; }
+    const before = JSON.stringify(s);
+    set(s, from);
+    if (JSON.stringify(s) === before) continue;
+    if (![`${file}.bak.ulanzi-lab`, `${file}.bak.ulanzi_lab`].some(f => fs.existsSync(f))) fs.writeFileSync(`${file}.bak.ulanzi-lab`, raw);
+    fs.writeFileSync(file, JSON.stringify(s, null, raw.includes('\n') ? 4 : 0)); // keep Studio's own layout
+    console.log(`${path.basename(file)}: CurrentProfile = ${NAME}`);
+  }
 }
+if (has('--activate')) select(null);
+else if (prev && prev.m.Name !== NAME) select(prev.m.Name);
 
 if (wasRunning && !has('--no-restart')) {
   if (MAC) spawn('open', ['-a', MAC_APP], { detached: true, stdio: 'ignore' }).unref();
