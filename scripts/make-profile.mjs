@@ -108,7 +108,10 @@ const iconFile = 'icon' + path.extname(LAYOUT.icon);
 const profileManifest = { Device: device, Icon: iconFile, Name: NAME, Pages: { Current: pageIds[0], Pages: pageIds }, Version: 2 };
 
 if (has('--dry-run')) {
-  console.log(JSON.stringify({ dir, profileManifest, page1: pages[0].manifest }, null, 2));
+  // What a real run would replace, and whether it would change Studio's current profile.
+  const replaces = prev ? { dir: prev.dir, name: prev.m.Name, matchedBy: prev.m.Name === NAME ? 'name' : 'legacy name' } : null;
+  const selects = has('--activate') ? 'always' : prev && prev.m.Name !== NAME ? `where "${prev.m.Name}" is selected` : 'no';
+  console.log(JSON.stringify({ dir, replaces, selects, profileManifest, page1: pages[0].manifest }, null, 2));
   process.exit(0);
 }
 
