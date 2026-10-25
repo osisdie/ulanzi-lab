@@ -7,6 +7,11 @@ updates:
   - package-ecosystem: npm
     directory: /plugin/com.ulanzi.nwpie.ulanziPlugin
     schedule: { interval: weekly }
+    ignore:
+      # koffi 3 ships per-OS binaries as optional packages (an install from WSL would drop the Windows one) and passes
+      # pointers as BigInt; move to it deliberately, with win32.js, not as a routine bump.
+      - dependency-name: koffi
+        update-types: [version-update:semver-major]
   - package-ecosystem: pip
     directory: /services/voice-asr
     schedule: { interval: weekly }
