@@ -1,6 +1,7 @@
-// Where the Voice profile keeps its files: <Documents>/ulanzi-lab/voice/{recordings,transcripts,tts,voices,inbox}
-// (ULANZI_LAB_VOICE_DIR overrides the root). Documents may be redirected into OneDrive, so the real folder comes
-// from Windows (winhelper docs.path) rather than ~/Documents.
+// Where the Voice profile keeps its files: ~/ulanzi-lab/voice/{recordings,transcripts,tts,voices,inbox} in the home
+// folder of whichever OS runs the plugin (C:\Users\<you>\ulanzi-lab\voice on Windows, browsable from WSL as
+// /mnt/c/Users/<you>/ulanzi-lab/voice). Not Documents: it is often redirected into OneDrive, and recordings should
+// stay on this machine. ULANZI_LAB_VOICE_DIR overrides the root.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -14,8 +15,8 @@ export function voiceDirs(root) {
   return dirs;
 }
 
-export function voiceRoot({ env = process.env, documents = null } = {}) {
-  return env.ULANZI_LAB_VOICE_DIR || path.join(documents || path.join(os.homedir(), 'Documents'), 'ulanzi-lab', 'voice');
+export function voiceRoot({ env = process.env, home = os.homedir() } = {}) {
+  return env.ULANZI_LAB_VOICE_DIR || path.join(home, 'ulanzi-lab', 'voice');
 }
 
 export function ensureDirs(dirs) { for (const d of Object.values(dirs)) fs.mkdirSync(d, { recursive: true }); }

@@ -9,6 +9,9 @@ import { recordArgs } from './ffmpeg.js';
 import { concatWav, fixWavHeader, pcmLevelDb } from './wav.js';
 import { stamp } from './paths.js';
 
+/** Best-effort delete: cleanup after a failure must not throw a second error (an unwritable folder fails rm too). */
+const tryRm = (p, opts = {}) => { try { fs.rmSync(p, { force: true, ...opts }); } catch { /* leave it */ } };
+
 
 export class Recorder extends EventEmitter {
   /** `device` is a pickMic() result; `maxSec` caps the whole recording across pauses. */
@@ -118,9 +121,9 @@ export class Recorder extends EventEmitter {
     try {
       seconds = await concatWav(this.segments, file);
     } catch (e) {
-      fs.rmSync(file, { force: true });
-      fs.rmSync(path.join(this.dir, 'ffmpeg.pid'), { force: true });
-      this.reset({ keepParts: true });
+      tryRm(file);
+      tryRm(path.join(this.dir, 'ffmpeg.pid'));
+      this.reset({ keepParts: !e.empty }); // nothing was recorded: nothing to keep
       throw e;
     }
     this.reset();
@@ -135,57 +138,63 @@ export class Recorder extends EventEmitter {
   }
 
   reset({ keepParts = false } = {}) {
-    if (this.dir && !keepParts) fs.rmSync(this.dir, { recursive: true, force: true });
+    if (this.dir && !keepParts) tryRm(this.dir, { recursive: true });
     Object.assign(this, { state: 'idle', id: null, dir: null, proc: null, segments: [], doneMs: 0, live: false });
   }
 }
 
 /**
- * Kill `pid` only if it is still our recorder: an ffmpeg whose command line writes into `.parts/<id>`. After a reboot
- * the pid may belong to anything, even another ffmpeg, so the image name alone is not enough.
+ * Whether `pid` is still our recorder: an ffmpeg whose command line writes into `.parts/<id>`. After a reboot the pid
+ * may belong to anything, even another ffmpeg, so the image name alone is not enough.
  */
-export function killOrphan(pid, { id, platform = process.platform, run = execFile } = {}) {
+export function ownFfmpeg(pid, { id, platform = process.platform, run = execFile } = {}) {
   return new Promise((resolve) => {
     const n = Number(pid);
     if (!Number.isInteger(n) || n <= 0 || !id) return resolve(false);
     const ours = (cmdline) => /ffmpeg/i.test(cmdline) && cmdline.includes('.parts') && cmdline.includes(id);
-    if (platform !== 'win32') {
-      run('ps', ['-p', String(n), '-o', 'args='], (err, out) => {
-        if (err || !ours(String(out))) return resolve(false);
-        try { process.kill(n); resolve(true); } catch { resolve(false); }
-      });
-      return;
-    }
-    run('powershell.exe', ['-NoProfile', '-Command', `(Get-CimInstance Win32_Process -Filter "ProcessId=${n}").CommandLine`], { windowsHide: true }, (err, out) => {
-      if (err || !ours(String(out))) return resolve(false);
-      run('taskkill', ['/PID', String(n), '/F'], { windowsHide: true }, (e) => resolve(!e));
-    });
+    if (platform !== 'win32') return run('ps', ['-p', String(n), '-o', 'args='], (err, out) => resolve(!err && ours(String(out))));
+    run('powershell.exe', ['-NoProfile', '-Command', `(Get-CimInstance Win32_Process -Filter "ProcessId=${n}").CommandLine`], { windowsHide: true },
+      (err, out) => resolve(!err && ours(String(out))));
   });
 }
 
+/** Kill `pid` if ownFfmpeg() says it is still recording into `.parts/<id>`. */
+export async function killOrphan(pid, { id, platform = process.platform, run = execFile } = {}) {
+  if (!(await ownFfmpeg(pid, { id, platform, run }))) return false;
+  if (platform !== 'win32') { try { process.kill(Number(pid)); return true; } catch { return false; } }
+  return new Promise((resolve) => run('taskkill', ['/PID', String(Number(pid)), '/F'], { windowsHide: true }, (e) => resolve(!e)));
+}
+
 /**
- * After a crash: stop any ffmpeg still recording into recordings/.parts, repair its segments and save them as
- * recordings/<stamp>-recovered.wav. Resolves the list of recovered files.
+ * Save what a crash or a failed save left in recordings/.parts as recordings/<stamp>-recovered.wav.
+ * At plugin start (`live: 'kill'`) an ffmpeg still recording there is ours from before the crash: stop it. On a key
+ * press (`live: 'skip'`) it may be another running instance's recording (Studio and the dev preview share the folder):
+ * leave that folder alone. A folder is deleted only once saved, or when it holds no audio; if saving fails (disk full,
+ * folder locked) the segments stay for the next attempt. Resolves { saved: [files], failed: [{ id, error }] }.
  */
-export async function recoverParts(dirs, { kill = killOrphan, log = () => {} } = {}) {
-  const out = [];
+export async function recoverParts(dirs, { live = 'kill', kill = killOrphan, isLive = ownFfmpeg, log = () => {} } = {}) {
+  const saved = [], failed = [];
   let ids = [];
-  try { ids = fs.readdirSync(dirs.parts); } catch { return out; }
+  try { ids = fs.readdirSync(dirs.parts); } catch { return { saved, failed }; }
   for (const id of ids) {
     const dir = path.join(dirs.parts, id);
+    const pidFile = path.join(dir, 'ffmpeg.pid');
+    const pid = fs.existsSync(pidFile) ? Number(fs.readFileSync(pidFile, 'utf8')) : 0;
+    if (pid && live === 'skip' && await isLive(pid, { id })) continue;
+    if (pid && live === 'kill' && await kill(pid, { id })) await new Promise(r => setTimeout(r, 500));
+    const file = path.join(dirs.recordings, `${id}-recovered.wav`);
     try {
-      const pidFile = path.join(dir, 'ffmpeg.pid');
-      if (fs.existsSync(pidFile) && await kill(Number(fs.readFileSync(pidFile, 'utf8')), { id })) await new Promise(r => setTimeout(r, 500));
       const segs = fs.readdirSync(dir).filter(f => f.endsWith('.wav')).sort().map(f => path.join(dir, f));
       for (const f of segs) { try { fixWavHeader(f); } catch { /* unreadable */ } }
-      const file = path.join(dirs.recordings, `${id}-recovered.wav`);
       await concatWav(segs, file);
-      out.push(file);
+      saved.push(file);
       log('recorder: recovered', file);
     } catch (e) {
-      log('recorder: nothing to recover in', dir, e.message);
+      tryRm(file);
+      if (!e.empty) { failed.push({ id, error: e.message }); log('recorder: could not recover', dir, e.message); continue; }
+      log('recorder: nothing to recover in', dir);
     }
-    fs.rmSync(dir, { recursive: true, force: true });
+    tryRm(dir, { recursive: true });
   }
-  return out;
+  return { saved, failed };
 }
