@@ -24,7 +24,8 @@ jobs:
         run: |
           git show "$BASE:scripts/check-commit-message.sh" > "$RUNNER_TEMP/check.sh" 2>/dev/null || cp scripts/check-commit-message.sh "$RUNNER_TEMP/check.sh"
           bad=0
-          for c in $(git rev-list "$BASE..$HEAD"); do
+          commits="$(git rev-list "$BASE..$HEAD")" # assigned first, so a failing rev-list fails the step
+          for c in $commits; do
             git log -1 --format=%B "$c" | bash "$RUNNER_TEMP/check.sh" || { echo "in commit $c"; bad=1; }
           done
           printf '%s\n\n%s\n' "$TITLE" "$BODY" | bash "$RUNNER_TEMP/check.sh" || { echo 'in the PR title or description'; bad=1; }

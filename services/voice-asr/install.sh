@@ -9,8 +9,11 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 HOME_DIR="${VOICE_ASR_HOME:-$HOME/.local/share/ulanzi-lab/voice-asr}"
 command -v uv >/dev/null || { echo "voice-asr: needs uv (https://docs.astral.sh/uv/)" >&2; exit 1; }
 
+PY=3.14 # every runtime wheel (ctranslate2, onnxruntime, av, tokenizers) and CPU torch exists for it
+uv python install -q "$PY" && uv python upgrade -q "$PY" # newest patch release, with its security fixes
+
 mkdir -p "$HOME_DIR/models"
-uv venv -q --allow-existing -p 3.11 "$HOME_DIR/.venv"
+uv venv -q --clear --managed-python -p "$PY" "$HOME_DIR/.venv"
 VIRTUAL_ENV="$HOME_DIR/.venv" uv pip install -q -r "$HERE/requirements.txt"
 
 CONVERT="$HOME_DIR/.convert-venv"
@@ -18,7 +21,7 @@ convert() { # name repo revision
   local out="$HOME_DIR/models/$1-ct2-int8"
   if [ -f "$out/model.bin" ] && [ -f "$out/tokenizer.json" ]; then echo "$1: installed"; return; fi
   if [ ! -x "$CONVERT/bin/ct2-transformers-converter" ]; then
-    uv venv -q --allow-existing -p 3.11 "$CONVERT"
+    uv venv -q --clear --managed-python -p "$PY" "$CONVERT"
     VIRTUAL_ENV="$CONVERT" uv pip install -q -r "$HERE/requirements-convert.txt" \
       --index-strategy unsafe-best-match --extra-index-url https://download.pytorch.org/whl/cpu
   fi

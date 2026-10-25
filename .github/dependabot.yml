@@ -1,0 +1,15 @@
+# Weekly update PRs. Actions are pinned to commit SHAs, and Dependabot moves the SHA and its version comment together.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+  - package-ecosystem: npm
+    directory: /plugin/com.ulanzi.nwpie.ulanziPlugin
+    schedule: { interval: weekly }
+  - package-ecosystem: pip
+    directory: /services/voice-asr
+    schedule: { interval: weekly }
+    ignore:
+      - dependency-name: av # faster-whisper 1.2.1 passes an argument PyAV 19 removed; lift this after faster-whisper updates
+        versions: [">=19"]

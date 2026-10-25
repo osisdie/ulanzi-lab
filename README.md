@@ -14,11 +14,10 @@
 <img src="https://img.shields.io/badge/Windows%20%2B%20WSL-0078D4" alt="Windows + WSL">
 <img src="https://img.shields.io/badge/macOS-000000?logo=apple&logoColor=white" alt="macOS">
 <img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fosisdie%2Fulanzi-lab%2Fmain%2Fpackage.json&query=%24.engines.node&label=node&logo=nodedotjs&logoColor=white&color=5FA04E" alt="Node.js versions">
-<img src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white" alt="Python 3.11 (voice service)">
+<img src="https://img.shields.io/badge/Python-3.14-3776AB?logo=python&logoColor=white" alt="Python 3.14 (voice service)">
 <img src="https://img.shields.io/badge/PowerShell-5391FE" alt="PowerShell">
 <img src="https://img.shields.io/badge/Bash-4EAA25?logo=gnubash&logoColor=white" alt="Bash">
 <img src="https://img.shields.io/badge/FFmpeg-007808?logo=ffmpeg&logoColor=white" alt="FFmpeg">
-<img src="https://img.shields.io/badge/Claude%20Code-hooks%20%2B%20statusLine-D97757?logo=claude&logoColor=white" alt="Claude Code hooks and statusLine">
 </p>
 
 A Claude Code companion deck for the **Ulanzi D200X** (5×3 LCD keys + one wide key) on **Windows + WSL** and **macOS**.
