@@ -19,3 +19,5 @@ Thanks for helping! This is a small hobby project: issues and pull requests are 
 ## Commit messages
 
 Use the imperative mood ("Add …", "Fix …"), and keep them about *this project*. Don't mention employers, customers or private projects.
+
+No co-author trailers, and no AI tool or model credits, in commit messages or PR titles and descriptions. CI checks every pull request with `scripts/check-commit-message.sh`; to check each commit as you make it, run `git config core.hooksPath .githooks` once.

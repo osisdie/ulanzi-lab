@@ -1,0 +1,27 @@
+name: commit messages
+# Commit messages and PR text must not credit a co-author or an AI tool or model (scripts/check-commit-message.sh).
+# Runs again when the title or description is edited.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+jobs:
+  check:
+    name: commit messages and PR text
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: No co-author or AI tool credits
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          bad=0
+          for c in $(git rev-list "$BASE..$HEAD"); do
+            git log -1 --format=%B "$c" | bash scripts/check-commit-message.sh || { echo "in commit $c"; bad=1; }
+          done
+          printf '%s\n\n%s\n' "$TITLE" "$BODY" | bash scripts/check-commit-message.sh || { echo 'in the PR title or description'; bad=1; }
+          exit $bad
