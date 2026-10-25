@@ -2,11 +2,15 @@
 // README demo of the Voice profile: docs/media/voice-demo.mp4 (with sound) and docs/images/voice-demo.gif.
 //
 //   services/voice-asr/start.sh &                      # the local speech-to-text service
-//   node scripts/voice-demo.mjs --audio speech.mp3     # any audio ffmpeg reads
+//   node scripts/voice-demo.mjs --audio speech.wav     # any audio ffmpeg reads
 //
 // The deck states follow a scripted timeline, but every key is drawn by the plugin's own templates, the level meter
-// is the clip's real loudness, and the transcript is what the local service returns for the clip.
-// Needs ffmpeg and rsvg-convert (Linux / WSL: apt install librsvg2-bin; macOS: brew install librsvg).
+// is the clip's real loudness, and the transcript is what the local service returns for the clip (punctuated by the
+// plugin, as on the deck). Needs ffmpeg and rsvg-convert (Linux / WSL: apt install librsvg2-bin; macOS: brew install
+// librsvg).
+//
+// The committed clip is a synthetic voice, not a person: MediaTek's BreezyVoice (Apache-2.0) speaking with the example
+// speaker bundled in its repository (data/example.wav), so the media can be redistributed under those terms.
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -18,7 +22,7 @@ const imp = (m) => import(new URL(m, SRC).href);
 const { voiceKey } = await imp('render-voice.js');
 const { VOICE_PAGES } = await imp('voice-pages.js');
 const { transcribe, punctuate } = await imp('voice/asr.js');
-const { pcmLevelDb } = await imp('voice/wav.js');
+const { pcmLevelDb, wavInfo } = await imp('voice/wav.js');
 const R = await imp('render.js');
 const P = await imp('render-pages.js');
 
@@ -34,11 +38,16 @@ fs.mkdirSync(path.join(TMP, 'frames'), { recursive: true });
 
 const wav = path.join(TMP, 'speech.wav');
 execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', AUDIO, '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', wav]);
-const pcm = fs.readFileSync(wav).subarray(44);
+const info = wavInfo(wav); // ffmpeg writes a LIST chunk before the data: don't assume a 44-byte header
+const pcm = fs.readFileSync(wav).subarray(info.dataOffset, info.dataOffset + info.dataSize);
 const SPEECH = pcm.length / 32000; // seconds
 const levels = [];
 for (let o = 0; o < pcm.length; o += 3200) levels.push(pcmLevelDb(pcm.subarray(o, o + 3200))); // one per 100 ms
 console.log(`clip: ${SPEECH.toFixed(1)} s; transcribing with ${ASR} …`);
+// Warm the service first (loads the model), so the time shown in the video is transcription only.
+const silence = path.join(TMP, 'warm.wav');
+execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'anullsrc=r=16000:cl=mono', '-t', '1', '-c:a', 'pcm_s16le', silence]);
+await transcribe(silence, { url: ASR, audioSec: 1 });
 const asr = await transcribe(wav, { url: ASR, lang: 'zh', audioSec: SPEECH });
 const text = punctuate(asr.segments);
 console.log(`transcript (${asr.elapsed} s): ${text}`);
@@ -66,7 +75,7 @@ function stateAt(t) {
   if (t < STOP_AT) {
     const n = Math.max(0, Math.floor((t - SPEAK_AT) * 10));
     const lv = t < SPEAK_AT ? [] : levels.slice(0, n).map(db => Math.max(db, -58));
-    return { ...base, phase: 'recording', elapsed: t - REC_AT, levels: lv.slice(-48), asr: { state: t < REC_AT + 1.5 ? 'starting' : 'ready' },
+    return { ...base, phase: 'recording', elapsed: t - REC_AT, levels: lv.slice(-48), asr: { state: t < REC_AT + 4 ? 'starting' : 'ready' },
       press: t < REC_AT + 0.4 ? '0_0' : null, step: ['● 錄音中', '同時在 WSL 啟動本機語音辨識（Breeze-ASR-25）'] };
   }
   if (t < ASR_AT) return { ...base, phase: 'saving', asr: { state: 'ready' }, press: '2_0', last: { ...last, txt: null, preview: '' }, step: ['完成＋逐字稿', '合併錄音段落'] };
