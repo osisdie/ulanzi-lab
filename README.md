@@ -1,5 +1,26 @@
 # ulanzi-lab
 
+<p>
+<a href="https://github.com/osisdie/ulanzi-lab/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/osisdie/ulanzi-lab/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+<a href="package.json"><img src="https://img.shields.io/github/package-json/v/osisdie/ulanzi-lab?label=version&color=informational" alt="Version"></a>
+<a href="LICENSE"><img src="https://img.shields.io/github/license/osisdie/ulanzi-lab?color=blue" alt="License: MIT"></a>
+<a href="https://github.com/osisdie/ulanzi-lab/commits/main"><img src="https://img.shields.io/github/last-commit/osisdie/ulanzi-lab/main" alt="Last commit"></a>
+<a href="https://github.com/osisdie/ulanzi-lab/stargazers"><img src="https://img.shields.io/github/stars/osisdie/ulanzi-lab?style=flat&logo=github" alt="GitHub stars"></a>
+<a href="https://github.com/osisdie/ulanzi-lab/issues"><img src="https://img.shields.io/github/issues/osisdie/ulanzi-lab" alt="Open issues"></a>
+<a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs welcome"></a>
+<a href="CODE_OF_CONDUCT.md"><img src="https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa" alt="Contributor Covenant 2.1"></a>
+<br>
+<img src="https://img.shields.io/badge/Ulanzi-D200X-ff6a00" alt="Ulanzi D200X">
+<img src="https://img.shields.io/badge/Windows%20%2B%20WSL-0078D4" alt="Windows + WSL">
+<img src="https://img.shields.io/badge/macOS-000000?logo=apple&logoColor=white" alt="macOS">
+<img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fosisdie%2Fulanzi-lab%2Fmain%2Fpackage.json&query=%24.engines.node&label=node&logo=nodedotjs&logoColor=white&color=5FA04E" alt="Node.js versions">
+<img src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white" alt="Python 3.11 (voice service)">
+<img src="https://img.shields.io/badge/PowerShell-5391FE" alt="PowerShell">
+<img src="https://img.shields.io/badge/Bash-4EAA25?logo=gnubash&logoColor=white" alt="Bash">
+<img src="https://img.shields.io/badge/FFmpeg-007808?logo=ffmpeg&logoColor=white" alt="FFmpeg">
+<img src="https://img.shields.io/badge/Claude%20Code-hooks%20%2B%20statusLine-D97757?logo=claude&logoColor=white" alt="Claude Code hooks and statusLine">
+</p>
+
 A Claude Code companion deck for the **Ulanzi D200X** (5×3 LCD keys + one wide key) on **Windows + WSL** and **macOS**.
 
 - **Never miss a waiting session.** When any Claude Code session needs a human decision (permission prompt, question, plan approval), its key blinks, a red wave ripples across the page, and a HITL key on every page counts the waiting sessions. Press it to jump straight to that session.
@@ -52,7 +73,7 @@ Ulanzi Studio ─spawns→ plugin app.js ─(Studio's Node unpatched → child o
 Clone the repo:
 
 ```bash
-git clone <this-repo-url> ulanzi-lab
+git clone https://github.com/osisdie/ulanzi-lab.git
 ```
 
 Go into it:
@@ -108,7 +129,7 @@ After pulling updates, re-run `scripts\setup.ps1`. Your `.env` is kept, so the d
 **Install**
 
 ```bash
-git clone <this-repo-url> ulanzi-lab
+git clone https://github.com/osisdie/ulanzi-lab.git
 cd ulanzi-lab
 cp .env.example .env
 bash scripts/setup-mac.sh
