@@ -65,5 +65,6 @@ chk() { printf '%s\n' "$1" | bash scripts/check-commit-message.sh 2>/dev/null; }
 chk 'fix(voice): keep segments on failure' && chk $'feat: x\n\n# Co-Authored-By in a git comment line is ignored' \
   && ! chk $'feat: x\n\nCo-Authored-By: Someone <a@b.c>' && ! chk 'docs: written with Claude' && ! chk 'chore: Sonnet 4 notes' \
   && ! chk 'see noreply@ANTHROPIC.com' && chk 'docs: sonnets and opusculum are fine' \
+  && chk 'docs: philanthropic' && chk $'feat: add a.js\n# ------------------------ >8 ------------------------\n+const dir = "~/.claude";' \
   || { echo 'check-commit-message.sh accepts or rejects the wrong messages'; exit 1; }
 pass 'check-commit-message.sh rejects co-author and AI tool credits'
