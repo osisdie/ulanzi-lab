@@ -187,7 +187,9 @@ A separate profile, **ulanzi-lab Voice**: record from the microphone and get a t
 
 <p align="center"><img src="docs/images/voice-demo.gif" alt="Voice profile: press record, speak, finish; the transcript appears on the wide key and is saved and copied" width="760"></p>
 
-<p align="center"><a href="docs/media/voice-demo.mp4">▶ Watch it with sound (MP4, 28 s)</a></p>
+With sound (28 s; also in the repo as [docs/media/voice-demo.mp4](docs/media/voice-demo.mp4)):
+
+https://github.com/user-attachments/assets/2a94d064-bd9a-4bb0-9ced-cc5b6e4d7620
 
 <sub>The deck states follow a script, but every key is drawn by the plugin's templates, the level meter follows the clip's real loudness, and the transcript is what the local speech-to-text service returned for it, punctuated by the plugin. The voice is synthetic: <a href="https://github.com/mtkresearch/BreezyVoice">BreezyVoice</a> (Apache-2.0) with the example speaker from its repository. Rebuild with <code>node scripts/voice-demo.mjs --audio &lt;file&gt;</code>.</sub>
 
