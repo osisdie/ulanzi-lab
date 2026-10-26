@@ -1,5 +1,7 @@
 # ulanzi-lab
 
+**繁體中文** · [English](README.en.md)
+
 <p>
 <a href="https://github.com/osisdie/ulanzi-lab/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/osisdie/ulanzi-lab/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
 <a href="package.json"><img src="https://img.shields.io/github/package-json/v/osisdie/ulanzi-lab?label=version&color=informational" alt="Version"></a>
@@ -20,26 +22,26 @@
 <img src="https://img.shields.io/badge/FFmpeg-007808?logo=ffmpeg&logoColor=white" alt="FFmpeg">
 </p>
 
-A Claude Code companion deck for the **Ulanzi D200X** (5×3 LCD keys + one wide key) on **Windows + WSL** and **macOS**.
+給 **Ulanzi D200X**（5×3 LCD 按鍵＋一個寬鍵）用的 Claude Code 控制面板，支援 **Windows + WSL** 和 **macOS**。
 
-- **Never miss a waiting session.** When any Claude Code session needs a human decision (permission prompt, question, plan approval), its key blinks, a red wave ripples across the page, and a HITL key on every page counts the waiting sessions. Press it to jump straight to that session.
-- **Usage at a glance.** 5-hour and 7-day rate-limit gauges with reset countdowns and a burn-rate forecast, taken from the Claude Code statusLine (no extra API calls, no credentials).
-- **A developer dashboard.** Code review (GitHub *or* GitLab), CI, markets, hardware, media/mic, a Pomodoro timer, window snapping, and a Claude command pad.
-- **Voice to text, on this PC.** A separate Voice profile records from the microphone and turns it into a punctuated transcript with a local Taiwanese-Mandarin speech model, copied to the clipboard. [See it below](#voice-profile-windows).
+- **不會漏掉在等你的 session。** 任何 Claude Code session 需要人來決定時（權限確認、提問、計畫核准），它的按鍵會閃爍，整頁掃過一道紅色波紋，每一頁都有的 HITL 鍵會顯示等待中的 session 數。按一下就直接跳到那個 session。
+- **用量一眼看清。** 5 小時和 7 天的用量上限儀表、重置倒數，以及依消耗速度推估的預測。資料取自 Claude Code 的 statusLine，不多打 API、不讀憑證。
+- **開發者儀表板。** Code review（GitHub *或* GitLab）、CI、股市行情、硬體監控、媒體／麥克風、番茄鐘、視窗排版，以及 Claude 指令面板。
+- **語音轉文字，全在本機。** 獨立的 Voice profile：從麥克風錄音，用本機的台灣華語語音模型轉成有標點的逐字稿，並複製到剪貼簿。[看下方示範](#語音-profilewindows)。
 
-<p align="center"><img src="docs/images/page-1-claude.png" alt="Page 1: sessions, HITL mascot, usage gauges, fleet strip" width="760"></p>
+<p align="center"><img src="docs/images/page-1-claude.png" alt="第 1 頁：sessions、HITL 吉祥物、用量儀表、fleet 列" width="760"></p>
 
 <table>
-<tr><td><img src="docs/images/page-9-pr-board.png" alt="PR / MR board" width="420"></td><td><img src="docs/images/page-5-media.png" alt="Media and audio" width="420"></td></tr>
-<tr><td><img src="docs/images/page-3-markets.png" alt="Markets" width="420"></td><td><img src="docs/images/page-7-hardware.png" alt="Hardware" width="420"></td></tr>
-<tr><td><img src="docs/images/page-6-focus.png" alt="Focus timer" width="420"></td><td><img src="docs/images/page-8-devops.png" alt="DevOps" width="420"></td></tr>
-<tr><td><img src="docs/images/page-10-claude-pad.png" alt="Command pad" width="420"></td><td><img src="docs/images/page-2-windows.png" alt="Window layout" width="420"></td></tr>
-<tr><td><img src="docs/images/theme-neon.png" alt="Neon theme" width="420"></td><td><img src="docs/images/theme-glass.png" alt="Glass theme" width="420"></td></tr>
+<tr><td><img src="docs/images/page-9-pr-board.png" alt="PR / MR 看板" width="420"></td><td><img src="docs/images/page-5-media.png" alt="媒體與音訊" width="420"></td></tr>
+<tr><td><img src="docs/images/page-3-markets.png" alt="股市" width="420"></td><td><img src="docs/images/page-7-hardware.png" alt="硬體" width="420"></td></tr>
+<tr><td><img src="docs/images/page-6-focus.png" alt="專注計時" width="420"></td><td><img src="docs/images/page-8-devops.png" alt="DevOps" width="420"></td></tr>
+<tr><td><img src="docs/images/page-10-claude-pad.png" alt="指令面板" width="420"></td><td><img src="docs/images/page-2-windows.png" alt="視窗排版" width="420"></td></tr>
+<tr><td><img src="docs/images/theme-neon.png" alt="Neon 主題" width="420"></td><td><img src="docs/images/theme-glass.png" alt="Glass 主題" width="420"></td></tr>
 </table>
 
-<sub>Screenshots are rendered from demo data with <code>node scripts/gallery.mjs</code>, using the plugin's real key templates.</sub>
+<sub>截圖用 <code>node scripts/gallery.mjs</code> 以示範資料產生，使用的是插件真正的按鍵樣板。</sub>
 
-Everything is driven by one Ulanzi Studio plugin (Node, bundled with Studio) plus small Claude Code hooks (in WSL on Windows, in your shell on macOS). A browser preview at `http://127.0.0.1:39300/` mirrors every page.
+全部功能由一個 Ulanzi Studio 插件（Node，Studio 內建）加上幾個小小的 Claude Code hook 驅動（Windows 上跑在 WSL 裡，macOS 上跑在你的 shell）。瀏覽器預覽頁 `http://127.0.0.1:39300/` 會同步顯示每一頁。
 
 ```
 WSL or macOS: claude sessions ── hooks/ulanzi-hook.sh ───────────┐  POST http://127.0.0.1:39300  (/hook, /usage)
@@ -55,77 +57,77 @@ Ulanzi Studio ─spawns→ plugin app.js ─(Studio's Node unpatched → child o
                          └─ hub.js          HTTP + SSE + browser preview
 ```
 
-## Quick start (Windows 11 + WSL2)
+## 快速開始（Windows 11 + WSL2）
 
-**Prerequisites**
+**需要的環境**
 
-- Node.js 22.23.4+ or 24.22.1+ (LTS with the October 2026 security fixes).
-- Ulanzi Studio. Connect the D200X and open Studio once, so it creates a "Default Profile".
-- WSL2 with `jq` and `curl`.
-- Optional:
-  - `tmux` for the Claude Pad and exact focus.
-  - `gh` or `glab` (logged in) for code review.
-  - Docker Desktop, n8n, or LibreHardwareMonitor for their keys.
+- Node.js 22.23.4+ 或 24.22.1+（含 2026 年 10 月資安修正的 LTS）。
+- Ulanzi Studio。接上 D200X 並開過一次 Studio，讓它建立「Default Profile」。
+- WSL2，裝好 `jq` 和 `curl`。
+- 選用：
+  - `tmux`：Claude Pad 和精準切換 session 需要。
+  - `gh` 或 `glab`（已登入）：code review 需要。
+  - Docker Desktop、n8n 或 LibreHardwareMonitor：對應的按鍵需要。
 
-**Install**
+**安裝**
 
-Clone the repo:
+下載 repo：
 
 ```bash
 git clone https://github.com/osisdie/ulanzi-lab.git
 ```
 
-Go into it:
+進入資料夾：
 
 ```bash
 cd ulanzi-lab
 ```
 
-Create your machine settings:
+建立本機設定：
 
 ```bash
 copy .env.example .env
 ```
 
-Run the setup:
+執行安裝：
 
 ```bash
 powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
 ```
 
-`setup.ps1` is idempotent. It:
+`setup.ps1` 可以重複執行，結果相同。它會：
 
-1. Checks the prerequisites, including WSL mirrored networking.
-2. Runs `npm install`.
-3. Links the plugin into Ulanzi Studio (a junction to this repo).
-4. Installs the hooks and statusLine into WSL's `~/.claude/settings.json`, after backing it up and keeping your existing hooks.
-5. Generates the **ulanzi-lab** profile from your D200X profile and starts Studio on it.
+1. 檢查需要的環境，包括 WSL 的 mirrored 網路模式。
+2. 執行 `npm install`。
+3. 把插件連結進 Ulanzi Studio（指向這個 repo 的 junction）。
+4. 把 hook 和 statusLine 裝進 WSL 的 `~/.claude/settings.json`；會先備份，並保留你原本的 hook。
+5. 依你的 D200X profile 產生 **ulanzi-lab** profile，並用它啟動 Studio。
 
-Options:
+選項：
 
-| Option | What it does |
+| 選項 | 作用 |
 |---|---|
-| `-EnvProfile <name>` | Copy `.env.<name>` to `.env` first. Useful when you keep several machine profiles. |
-| `-FixWslConfig` | Add `networkingMode=mirrored` to `%USERPROFILE%\.wslconfig`, then ask you to run `wsl --shutdown`. The WSL hooks need it to reach `127.0.0.1`. |
-| `-Distro <name>` | Use this WSL distro instead of the default. |
-| `-SkipHooks` | Leave WSL's Claude Code settings alone. |
+| `-EnvProfile <name>` | 先把 `.env.<name>` 複製成 `.env`。有多台機器的設定時好用。 |
+| `-FixWslConfig` | 在 `%USERPROFILE%\.wslconfig` 加上 `networkingMode=mirrored`，再請你執行 `wsl --shutdown`。WSL 裡的 hook 要靠它才連得到 `127.0.0.1`。 |
+| `-Distro <name>` | 改用這個 WSL distro，不用預設的。 |
+| `-SkipHooks` | 不動 WSL 的 Claude Code 設定。 |
 
-After pulling updates, re-run `scripts\setup.ps1`. Your `.env` is kept, so the deck still has your own pages and forge.
+拉下更新後，再執行一次 `scripts\setup.ps1`。你的 `.env` 會保留，所以按鍵頁和 forge 設定都還是你的。
 
-## Quick start (macOS)
+## 快速開始（macOS）
 
-**Prerequisites**
+**需要的環境**
 
-- macOS 12 or newer and Node.js 22.23.4+ or 24.22.1+ (LTS with the October 2026 security fixes).
-- Ulanzi Studio for Mac. Connect the D200X and open Studio once, so it creates a "Default Profile".
-- `jq` and `curl` (`brew install jq`).
-- Optional:
-  - `tmux` for the Claude Pad and exact focus.
-  - `gh` or `glab` (logged in) for code review.
-  - `switchaudio-osx` for the audio output key.
-  - Docker Desktop or n8n for their keys.
+- macOS 12 以上，Node.js 22.23.4+ 或 24.22.1+（含 2026 年 10 月資安修正的 LTS）。
+- Mac 版 Ulanzi Studio。接上 D200X 並開過一次 Studio，讓它建立「Default Profile」。
+- `jq` 和 `curl`（`brew install jq`）。
+- 選用：
+  - `tmux`：Claude Pad 和精準切換 session 需要。
+  - `gh` 或 `glab`（已登入）：code review 需要。
+  - `switchaudio-osx`：切換音訊輸出的按鍵需要。
+  - Docker Desktop 或 n8n：對應的按鍵需要。
 
-**Install**
+**安裝**
 
 ```bash
 git clone https://github.com/osisdie/ulanzi-lab.git
@@ -134,213 +136,212 @@ cp .env.example .env
 bash scripts/setup-mac.sh
 ```
 
-The script:
+這個腳本會：
 
-1. Checks the prerequisites.
-2. Runs `npm install`.
-3. Symlinks the plugin into `~/Library/Application Support/Ulanzi/UlanziDeck/Plugins`.
-4. Installs the hooks and statusLine into `~/.claude/settings.json`, after backing it up and keeping your existing hooks.
-5. Generates the **ulanzi-lab** profile from your D200X profile and starts Studio on it.
+1. 檢查需要的環境。
+2. 執行 `npm install`。
+3. 把插件 symlink 到 `~/Library/Application Support/Ulanzi/UlanziDeck/Plugins`。
+4. 把 hook 和 statusLine 裝進 `~/.claude/settings.json`；會先備份，並保留你原本的 hook。
+5. 依你的 D200X profile 產生 **ulanzi-lab** profile，並用它啟動 Studio。
 
-`--env-profile <name>` and `--skip-hooks` work like their `setup.ps1` counterparts.
+`--env-profile <name>` 和 `--skip-hooks` 的作用和 `setup.ps1` 的對應選項相同。
 
-**Permissions.** macOS asks the first time a key needs one. Allow them for Ulanzi Studio:
+**權限。** 按鍵第一次需要權限時，macOS 會詢問。請允許 Ulanzi Studio：
 
-- **Accessibility:** window layout keys.
-- **Automation:** System Events, iTerm2 / Terminal (jump to a session's tab), Spotify / Music (media keys).
+- **輔助使用（Accessibility）**：視窗排版鍵。
+- **自動化（Automation）**：System Events、iTerm2／Terminal（跳到 session 所在的分頁）、Spotify／Music（媒體鍵）。
 
-**What is different on macOS**
+**macOS 上的差異**
 
-| Area | macOS |
+| 項目 | macOS |
 |---|---|
-| Sessions, HITL, usage, Claude Pad, code review | The same. Hooks, `tmux`, `gh` and `glab` run in your own shell instead of WSL. |
-| Focus | tmux pane → iTerm2 / Terminal tab (matched by tty) → VS Code folder → the session's terminal app. |
-| Window layout | Through System Events. **Restore** puts a window back where it was before its first snap. Full-screen windows can't be moved. |
-| Media | Spotify and Music only, since macOS has no public now-playing API. Album art comes from Spotify. |
-| Audio | Volume, mute, and mic (input volume 0). Switching outputs needs `SwitchAudioSource`. |
-| Hardware | CPU, cores, RAM, GPU %, GPU memory in use, network, disk I/O, root volume. No temperatures and no disk busy %. |
-| WSL keys | Replaced by Docker (page 1), System Health (Hardware) and RAM (DevOps). |
+| Sessions、HITL、用量、Claude Pad、code review | 相同。Hook、`tmux`、`gh` 和 `glab` 在你自己的 shell 執行，不是 WSL。 |
+| 切換到 session | tmux pane → iTerm2／Terminal 分頁（以 tty 比對）→ VS Code 資料夾 → session 所在的終端機 App。 |
+| 視窗排版 | 透過 System Events。**還原**會把視窗放回第一次排版前的位置。全螢幕視窗無法移動。 |
+| 媒體 | 只支援 Spotify 和 Music，因為 macOS 沒有公開的「正在播放」API。專輯封面來自 Spotify。 |
+| 音訊 | 音量、靜音、麥克風（輸入音量設為 0）。切換輸出裝置需要 `SwitchAudioSource`。 |
+| 硬體 | CPU、各核心、RAM、GPU %、使用中的 GPU 記憶體、網路、磁碟 I/O、根磁碟區。沒有溫度，也沒有磁碟忙碌 %。 |
+| WSL 鍵 | 換成 Docker（第 1 頁）、System Health（Hardware 頁）和 RAM（DevOps 頁）。 |
 
-## Configuration (`.env`)
+## 設定（`.env`）
 
-Every organisation- or machine-specific value lives in `.env` at the repo root. Git ignores it, along with every other `.env.*` except `.env.example`.
-See [.env.example](.env.example) for the full list with comments. After editing, run `node scripts/make-profile.mjs --activate`, which rebuilds the pages and restarts Studio.
+所有和組織或機器有關的值都放在 repo 根目錄的 `.env`。Git 會忽略它，以及除了 `.env.example` 以外的所有 `.env.*`。
+完整清單和說明見 [.env.example](.env.example)。改完後執行 `node scripts/make-profile.mjs --activate`，它會重建按鍵頁並重啟 Studio。
 
-| Key | Default | Purpose |
+| Key | 預設值 | 用途 |
 |---|---|---|
-| `ULANZI_LAB_FORGE` | `auto` | `gitlab`, `github`, or `auto` (whichever CLI is logged in; GitLab first) |
-| `ULANZI_LAB_GITLAB_HOST` | (logged-in host) | Self-hosted GitLab host for `glab` |
-| `ULANZI_LAB_GITHUB_HOST` | `github.com` | GitHub or GitHub Enterprise host for `gh` |
-| `ULANZI_LAB_BOARD_SCOPE` | `involves:@me` | GitHub search qualifiers for the PR board (`org:x`, `repo:o/r`, …) |
-| `ULANZI_LAB_ACTIONS_REPO` | (repos of your PRs) | `owner/name` for the GitHub Actions key |
-| `ULANZI_LAB_HTTP_CHECKS` | Claude API | Up to two `url\|label` health checks |
-| `ULANZI_LAB_WATCHLIST` | (none) | Up to 12 `SYMBOL:label` items. Adds a Watchlist page. |
-| `ULANZI_LAB_WATCHLIST_STRIP` | (none) | Up to 3 items for the Watchlist wide key (mini candlesticks) |
-| `ULANZI_LAB_DISTRO` | default distro | WSL distro the plugin talks to |
-| `ULANZI_LAB_SOUNDS` | — | Your own sounds JSON, absolute or relative to the folder holding `.env` (the repo root); relative sound paths inside it are relative to the JSON file. It overrides only the keys it sets (`focusDone`, `breakDone`, `waiting`; `"off"` mutes). Defaults: [`config/sounds.windows.json`](plugin/com.ulanzi.nwpie.ulanziPlugin/config/sounds.windows.json), [`config/sounds.mac.json`](plugin/com.ulanzi.nwpie.ulanziPlugin/config/sounds.mac.json). Windows plays `.wav` only. |
-| `ULANZI_LAB_NODE` | found automatically | Node that runs the plugin when Studio's bundled one lacks security fixes; `bundled` keeps Studio's |
-| `ULANZI_LAB_N8N_URL` | `http://127.0.0.1:5678` | n8n key |
-| `ULANZI_LAB_PORT` / `ULANZI_LAB_GAP` | `39300` / `0` | Hub port / gap between snapped windows |
+| `ULANZI_LAB_FORGE` | `auto` | `gitlab`、`github` 或 `auto`（哪個 CLI 已登入就用哪個；GitLab 優先） |
+| `ULANZI_LAB_GITLAB_HOST` | （已登入的 host） | `glab` 用的自架 GitLab host |
+| `ULANZI_LAB_GITHUB_HOST` | `github.com` | `gh` 用的 GitHub 或 GitHub Enterprise host |
+| `ULANZI_LAB_BOARD_SCOPE` | `involves:@me` | PR 看板的 GitHub 搜尋條件（`org:x`、`repo:o/r`…） |
+| `ULANZI_LAB_ACTIONS_REPO` | （你的 PR 所在的 repo） | GitHub Actions 鍵用的 `owner/name` |
+| `ULANZI_LAB_HTTP_CHECKS` | Claude API | 最多兩個 `url\|label` 健康檢查 |
+| `ULANZI_LAB_WATCHLIST` | （無） | 最多 12 個 `SYMBOL:label`。會多一頁 Watchlist。 |
+| `ULANZI_LAB_WATCHLIST_STRIP` | （無） | Watchlist 寬鍵的最多 3 個項目（迷你 K 線） |
+| `ULANZI_LAB_DISTRO` | 預設 distro | 插件要連的 WSL distro |
+| `ULANZI_LAB_SOUNDS` | — | 你自己的音效 JSON，可以是絕對路徑，或相對於 `.env` 所在資料夾（repo 根目錄）；JSON 裡的音效路徑相對於該 JSON 檔。只覆蓋它有設的 key（`focusDone`、`breakDone`、`waiting`；`"off"` 表示靜音）。預設值：[`config/sounds.windows.json`](plugin/com.ulanzi.nwpie.ulanziPlugin/config/sounds.windows.json)、[`config/sounds.mac.json`](plugin/com.ulanzi.nwpie.ulanziPlugin/config/sounds.mac.json)。Windows 只能播 `.wav`。 |
+| `ULANZI_LAB_NODE` | 自動尋找 | Studio 內建的 Node 缺資安修正時，用來執行插件的 Node；`bundled` 表示維持 Studio 的 |
+| `ULANZI_LAB_N8N_URL` | `http://127.0.0.1:5678` | n8n 鍵 |
+| `ULANZI_LAB_PORT` / `ULANZI_LAB_GAP` | `39300` / `0` | Hub 的 port／排版時視窗之間的間距 |
 
-Inside WSL, the hook and statusLine scripts read `ULANZI_HUB`, which defaults to `http://127.0.0.1:39300`.
+在 WSL 裡，hook 和 statusLine 腳本讀取 `ULANZI_HUB`，預設是 `http://127.0.0.1:39300`。
 
-## Pages
+## 按鍵頁
 
-The page buttons (`0_3` / `1_3`) flip pages. Every page keeps a **HITL** key.
+換頁鍵（`0_3`／`1_3`）用來翻頁。每一頁都保留 **HITL** 鍵。
 
-| # | Page | Keys |
+| # | 頁面 | 按鍵 |
 |---|---|---|
-| 1 | **Claude** | Sessions S1–S4, HITL. 5h / 7d usage, system, WSL, AIoT. Bottom row: Pomodoro timer + count, CI/CD. Wide key: fleet strip (sessions, usage bars, burn rate) |
-| 2 | **Windows** | Snap the foreground window: halves, quarters, thirds, center, maximize. Presets: 2-split, 4-grid. Wide key: HITL banner |
-| 3 | **Markets** | TAIEX, Dow, S&P 500, Nasdaq, SOX, Nikkei, USD/TWD, DXY, USD/JPY, gold, WTI, BTC. Wide key: Brent / silver / copper candlesticks |
-| (4) | **Watchlist** | Only with `ULANZI_LAB_WATCHLIST`: your 12 symbols plus a 3-row candlestick strip |
-| 4 | **Media** | Album art, prev / play / next, volume ring, vol −/+, **mic mute**, output device, Spotify, YouTube Music. Wide key: now playing |
-| 5 | **Focus** | Pomodoro (25/50/15), reset, +5, breaks, today and week counts, DND, Clawd. Wide key: big timer |
-| 6 | **Hardware** | CPU, per-core heatmap, RAM, GPU, VRAM, disk, WSL, network ↓↑, disk I/O, uptime, temps (LibreHardwareMonitor). Wide key: dashboard |
-| 7 | **DevOps** | My PRs/MRs, review requests, Claude status, Docker, n8n, HTTP checks, CI (GitHub Actions or MR CI), usage, GitHub status. Wide key: PR/MR list |
-| 8 | **PR / MR Board** | Open total, CI failed, conflicts, idle ≥ 7 days, and the 8 repos needing the most attention. Wide key: problem list |
-| 9 | **Claude Pad** | Approve (1) / Always (2) / Esc / Enter, plus `continue`, `/compact`, run tests, commit, review diff, `/clear` (hold), explain error, plan first. Wide key: target session |
+| 1 | **Claude** | Session S1–S4、HITL。5h／7d 用量、系統、WSL、AIoT。最下排：番茄鐘＋次數、CI/CD。寬鍵：fleet 列（sessions、用量條、消耗速度） |
+| 2 | **Windows** | 排版目前的前景視窗：左右半邊、四分之一、三分之一、置中、最大化。預設組合：二分割、四宮格。寬鍵：HITL 橫幅 |
+| 3 | **Markets** | 加權指數、道瓊、S&P 500、那斯達克、費半、日經、美元／台幣、美元指數、美元／日圓、黃金、WTI、BTC。寬鍵：布蘭特原油／白銀／銅的 K 線 |
+| (4) | **Watchlist** | 只在設定 `ULANZI_LAB_WATCHLIST` 時出現：你的 12 個標的，加上 3 列 K 線 |
+| 4 | **Media** | 專輯封面、上一首／播放／下一首、音量環、音量 −/+、**麥克風靜音**、輸出裝置、Spotify、YouTube Music。寬鍵：正在播放 |
+| 5 | **Focus** | 番茄鐘（25/50/15）、重設、+5、休息、今日和本週次數、勿擾、Clawd。寬鍵：大計時器 |
+| 6 | **Hardware** | CPU、各核心熱圖、RAM、GPU、VRAM、磁碟、WSL、網路 ↓↑、磁碟 I/O、開機時間、溫度（LibreHardwareMonitor）。寬鍵：儀表板 |
+| 7 | **DevOps** | 我的 PR／MR、待我 review、Claude 狀態、Docker、n8n、HTTP 檢查、CI（GitHub Actions 或 MR CI）、用量、GitHub 狀態。寬鍵：PR／MR 清單 |
+| 8 | **PR / MR Board** | 開啟中總數、CI 失敗、衝突、閒置 ≥ 7 天，以及最需要處理的 8 個 repo。寬鍵：問題清單 |
+| 9 | **Claude Pad** | 核准（1）／一律允許（2）／Esc／Enter，加上 `continue`、`/compact`、跑測試、commit、review diff、`/clear`（長按）、解釋錯誤、先做計畫。寬鍵：目標 session |
 
-### Voice profile (Windows)
+### 語音 profile（Windows）
 
-A separate profile, **ulanzi-lab Voice**: record from the microphone and get a transcript, all on this PC.
+獨立的 profile **ulanzi-lab Voice**：從麥克風錄音並產生逐字稿，全部在這台電腦上完成。
 
-<p align="center"><img src="docs/images/voice-demo.gif" alt="Voice profile: press record, speak, finish; the transcript appears on the wide key and is saved and copied" width="760"></p>
+<p align="center"><img src="docs/images/voice-demo.gif" alt="Voice profile：按錄音、說話、完成；逐字稿顯示在寬鍵上，同時存檔並複製" width="760"></p>
 
-With sound (28 s; also in the repo as [docs/media/voice-demo.mp4](docs/media/voice-demo.mp4)):
+有聲音的版本（28 秒；repo 裡也有一份 [docs/media/voice-demo.mp4](docs/media/voice-demo.mp4)）：
 
 https://github.com/user-attachments/assets/2a94d064-bd9a-4bb0-9ced-cc5b6e4d7620
 
-<sub>The deck states follow a script, but every key is drawn by the plugin's templates, the level meter follows the clip's real loudness, and the transcript is what the local speech-to-text service returned for it, punctuated by the plugin. The voice is synthetic: <a href="https://github.com/mtkresearch/BreezyVoice">BreezyVoice</a> (Apache-2.0) with the example speaker from its repository. Rebuild with <code>node scripts/voice-demo.mjs --audio &lt;file&gt;</code>.</sub>
+<sub>按鍵狀態照腳本切換，但每個按鍵都由插件的樣板繪製，音量條跟著音檔真實的音量，逐字稿是本機語音轉文字服務對這段音檔的實際輸出，再由插件補上標點。聲音是合成的：<a href="https://github.com/mtkresearch/BreezyVoice">BreezyVoice</a>（Apache-2.0）搭配其 repo 附的範例講者。重新產生：<code>node scripts/voice-demo.mjs --audio &lt;file&gt;</code>。</sub>
 
-<p align="center"><img src="docs/images/voice-states.png" alt="Voice page: idle, recording, transcribing, done" width="840"></p>
+<p align="center"><img src="docs/images/voice-states.png" alt="Voice 頁：待機、錄音中、轉寫中、完成" width="840"></p>
 
-| Row | Keys |
+| 列 | 按鍵 |
 |---|---|
-| 1 | **● Record** (press again: pause / resume), **Finish** (keep the recording), **Finish + transcript**, **Cancel** (press twice), HITL |
-| 2 | **Last transcript** (hold: show it in its folder), **Copy** it, mic mute, **Transcribe again**, speech-to-text status |
-| 3 | **Language** (華語 / English / 台語 / auto), recordings folder, clock. Wide key: timer and level meter while recording, then the first lines of the transcript |
+| 1 | **● 錄音**（再按一次：暫停／繼續）、**完成**（只保留錄音）、**完成＋逐字稿**、**取消**（按兩次）、HITL |
+| 2 | **最後的逐字稿**（長按：在資料夾中顯示）、**複製**逐字稿、麥克風靜音、**重新轉寫**、語音轉文字服務狀態 |
+| 3 | **語言**（華語／English／台語／自動）、錄音資料夾、時鐘。寬鍵：錄音中顯示計時和音量條，完成後顯示逐字稿的前幾行 |
 
-Setup:
+設定步驟：
 
-1. `winget install Gyan.FFmpeg` (Studio finds it without a restart).
-2. In WSL: `services/voice-asr/install.sh` (add `--taigi` for Taiwanese Hokkien). It builds a venv and converts the official [Breeze-ASR-25](https://huggingface.co/MediaTek-Research/Breeze-ASR-25) weights to int8 under `~/.local/share/ulanzi-lab/voice-asr` (about 2 GB).
-3. `npm run profile:voice` creates the profile; switch to it in Ulanzi Studio.
+1. `winget install Gyan.FFmpeg`（Studio 不用重啟就找得到）。
+2. 在 WSL 執行 `services/voice-asr/install.sh`（加 `--taigi` 會一併安裝台語模型）。它會建立 venv，並把官方的 [Breeze-ASR-25](https://huggingface.co/MediaTek-Research/Breeze-ASR-25) 權重轉成 int8，放在 `~/.local/share/ulanzi-lab/voice-asr`（約 2 GB）。
+3. `npm run profile:voice` 建立 profile，再到 Ulanzi Studio 切換過去。
 
-Each recording is saved under `~/ulanzi-lab/voice` (`C:\Users\<you>\ulanzi-lab\voice`; `ULANZI_LAB_VOICE_DIR` changes it) as `recordings/<time>.wav`, with `transcripts/<time>.txt` (punctuated) and `.srt`. (The first build used `Documents\ulanzi-lab\voice`; move anything there into the new folder.) The text is also copied to the clipboard. On a laptop CPU, transcription takes about as long as the recording. The service starts on the first key press (about 10 s), and stops after 15 idle minutes or when Studio quits.
+每段錄音存在 `~/ulanzi-lab/voice`（`C:\Users\<you>\ulanzi-lab\voice`；可用 `ULANZI_LAB_VOICE_DIR` 更改），檔名是 `recordings/<time>.wav`，加上 `transcripts/<time>.txt`（有標點）和 `.srt`。（最早的版本用的是 `Documents\ulanzi-lab\voice`，裡面的檔案請搬到新資料夾。）文字也會複製到剪貼簿。在筆電 CPU 上，轉寫時間大約等於錄音長度。服務在第一次按鍵時啟動（約 10 秒），閒置 15 分鐘或 Studio 結束時自動關閉。
 
-**Code review works the same on GitHub and GitLab:**
-- `glab` / `gh` run inside WSL (in your shell on macOS), so the CLI's own login is used.
-- If you aren't logged in, pressing a review key opens a Windows Terminal tab (a Terminal window on macOS) that runs `glab auth login` / `gh auth login`.
-- Holding any DevOps key refreshes it.
+**Code review 在 GitHub 和 GitLab 上用法相同：**
+- `glab`／`gh` 在 WSL 裡執行（macOS 上是你的 shell），所以用的是 CLI 自己的登入。
+- 還沒登入時，按下 review 鍵會開一個 Windows Terminal 分頁（macOS 是 Terminal 視窗）執行 `glab auth login`／`gh auth login`。
+- 長按任何 DevOps 鍵會重新整理。
 
 ## Actions
 
-| Action | Shows | Press | Hold |
+| Action | 顯示 | 按下 | 長按 |
 |---|---|---|---|
-| Claude Session | Slot S1–S8: project, state, time, context bar. **Waiting blinks** (red = permission, purple = question, orange = plan) | Focus the session | Dismiss |
-| Claude HITL | Waiting count (Clawd mascot or big counter) | Focus the longest-waiting session; press again to cycle | Acknowledge all |
-| Claude Usage | 5h / 7d ring, or the wide fleet strip | — | — |
-| Stock Quote | TW (`2330`, `t00`, `otc:6488`) or Yahoo symbols (`NVDA`, `^DJI`, `GC=F`, `TWD=X`, `BTC-USD`) with an intraday chart. A comma list gives a candlestick strip. Red = up by default. | Open the quote page (Yahoo奇摩股市 for TW, Yahoo Finance otherwise; a strip opens its first symbol) | Refresh |
-| Media & Audio | Now playing, volume, mic, output device | Play/pause, volume, mute, cycle | — |
-| Focus Timer | Pomodoro parts | Start/pause, reset, +5, … | Reset |
-| Hardware | One metric per key | Task Manager / Explorer | — |
-| DevOps | PRs/MRs, review board, Actions, status, HTTP, Docker, n8n | Open in browser (or log in) | Refresh |
-| Claude Prompt / Target | Text or keys to type into the target session's tmux pane | Send | Required for `/clear` |
-| System / WSL / AIoT / Window Layout | As named | Task Manager / new WSL tab / toggle / snap | WSL: arm `wsl --shutdown` |
-| Voice | Record / pause, finish, cancel, last transcript, copy, language, speech-to-text status (Windows) | As labelled | Last transcript: show in folder |
+| Claude Session | S1–S8 欄位：專案、狀態、時間、context 條。**等待中會閃爍**（紅＝權限、紫＝提問、橘＝計畫） | 切到該 session | 移除 |
+| Claude HITL | 等待數（Clawd 吉祥物或大數字） | 切到等最久的 session；再按一次換下一個 | 全部確認 |
+| Claude Usage | 5h／7d 圓環，或寬的 fleet 列 | — | — |
+| Stock Quote | 台股（`2330`、`t00`、`otc:6488`）或 Yahoo 代號（`NVDA`、`^DJI`、`GC=F`、`TWD=X`、`BTC-USD`），附當日走勢圖。用逗號列出多個會變成 K 線列。預設紅漲綠跌。 | 開啟報價頁（台股開 Yahoo奇摩股市，其他開 Yahoo Finance；K 線列開第一個代號） | 重新整理 |
+| Media & Audio | 正在播放、音量、麥克風、輸出裝置 | 播放／暫停、音量、靜音、切換 | — |
+| Focus Timer | 番茄鐘的各部分 | 開始／暫停、重設、+5… | 重設 |
+| Hardware | 每個按鍵一個指標 | 工作管理員／檔案總管 | — |
+| DevOps | PR／MR、review 看板、Actions、狀態、HTTP、Docker、n8n | 在瀏覽器開啟（或登入） | 重新整理 |
+| Claude Prompt / Target | 要輸入到目標 session tmux pane 的文字或按鍵 | 送出 | `/clear` 需要長按 |
+| System / WSL / AIoT / Window Layout | 如名稱所示 | 工作管理員／新的 WSL 分頁／切換／排版 | WSL：準備 `wsl --shutdown` |
+| Voice | 錄音／暫停、完成、取消、最後的逐字稿、複製、語言、語音轉文字狀態（Windows） | 如按鍵標示 | 最後的逐字稿：在資料夾中顯示 |
 
-**Visuals:**
-- A full-panel alert wave when a session starts waiting.
-- Themes: classic, neon or glass, chosen on any HITL key.
-- Intraday area charts and candlesticks on quote keys.
-- Clawd moods: idle, working, waiting, done, celebrate, love.
+**視覺效果：**
+- Session 開始等待時，整個面板掃過一道警示波紋。
+- 主題：classic、neon 或 glass，在任一 HITL 鍵上選擇。
+- 報價鍵上的當日面積圖和 K 線。
+- Clawd 的表情：待機、工作中、等待、完成、慶祝、愛心。
 
-## HITL details
+## HITL 細節
 
-- **Waiting** is triggered by:
-  - `PermissionRequest`, or the `permission_prompt` notification.
-  - Question notifications.
-  - `AskUserQuestion` or `ExitPlanMode`.
-- **Waiting clears** on:
-  - The matching `PostToolUse` (by `tool_use_id`).
-  - `UserPromptSubmit`.
-  - `Stop`.
-- **Sound.** An existing `permission_prompt` sound hook is kept, and our hook joins the same matcher group. The optional nag replays a chime every 60 s until you acknowledge.
-- **Focus** tries these in order:
-  1. The tmux pane.
-  2. The VS Code window with that folder.
-  3. A Windows Terminal tab whose title matches.
-  4. Any Windows Terminal window.
+- **進入等待**的觸發條件：
+  - `PermissionRequest`，或 `permission_prompt` 通知。
+  - 提問通知。
+  - `AskUserQuestion` 或 `ExitPlanMode`。
+- **解除等待**的條件：
+  - 對應的 `PostToolUse`（以 `tool_use_id` 比對）。
+  - `UserPromptSubmit`。
+  - `Stop`。
+- **音效。** 原有的 `permission_prompt` 音效 hook 會保留，我們的 hook 加入同一個 matcher 群組。可選的提醒會每 60 秒響一次，直到你確認為止。
+- **切換到 session** 依序嘗試：
+  1. tmux pane。
+  2. 開著該資料夾的 VS Code 視窗。
+  3. 標題相符的 Windows Terminal 分頁。
+  4. 任一個 Windows Terminal 視窗。
 
-  On macOS: the tmux pane, then the iTerm2 / Terminal tab with the session's tty, then the VS Code folder, then the terminal app.
-- **Liveness.** Sessions whose claude process has exited are dropped within 30 s.
+  macOS：tmux pane，接著是 session tty 所在的 iTerm2／Terminal 分頁，然後是 VS Code 資料夾，最後是終端機 App。
+- **存活偵測。** claude 程序已結束的 session 會在 30 秒內移除。
 
-## Privacy and security
+## 隱私與安全
 
-- **Hooks send metadata only.** They forward an allowlist (session id, event, notification type, cwd, tool name, focus hints). Prompts, tool inputs and transcripts never leave Claude Code, and the hub sanitizes the data again.
-- **Hooks can't slow Claude down.** They print nothing, always exit 0, and post with a 1 s timeout. High-frequency tool hooks run `async`.
-- **The hub is local-only.** It binds to `127.0.0.1` and only accepts `application/json` POSTs, which blocks cross-site forgery.
-- **No credentials are read.** Usage comes from the statusLine. `gh` / `glab` use their own login inside WSL.
-- **Claude Pad only types into tmux panes.** A session outside tmux is refused.
-- **Voice stays on this PC.** Speech-to-text runs locally and listens on `127.0.0.1` only. Recordings and transcripts go to `~/ulanzi-lab/voice` (`C:\Users\<you>\ulanzi-lab\voice`), outside Documents so OneDrive doesn't sync them. The log records lengths and timings, never what you said.
+- **Hook 只送中繼資料。** 只轉送白名單內的欄位（session id、事件、通知類型、cwd、工具名稱、切換提示）。Prompt、工具輸入和對話紀錄都不會離開 Claude Code，hub 收到後也會再過濾一次。
+- **Hook 不會拖慢 Claude。** 不輸出任何東西、一律 exit 0、POST 逾時 1 秒。高頻率的工具 hook 以 `async` 執行。
+- **Hub 只在本機。** 只綁 `127.0.0.1`，而且只接受 `application/json` 的 POST，可以擋掉跨站偽造請求。
+- **不讀任何憑證。** 用量來自 statusLine。`gh`／`glab` 在 WSL 裡用它們自己的登入。
+- **Claude Pad 只輸入到 tmux pane。** 不在 tmux 裡的 session 會被拒絕。
+- **語音留在這台電腦。** 語音轉文字在本機執行，只聽 `127.0.0.1`。錄音和逐字稿存在 `~/ulanzi-lab/voice`（`C:\Users\<you>\ulanzi-lab\voice`），不在 Documents 底下，所以 OneDrive 不會同步。Log 只記長度和耗時，從不記你說了什麼。
 
-## Development
+## 開發
 
 ```bash
 npm test
 ```
-Runs the `node:test` suite: state machine, parsers, page layouts, every SVG template.
+執行 `node:test` 測試：狀態機、解析器、按鍵頁版面、每個 SVG 樣板。
 
 ```bash
 npm run smoke
 bash test/ci/shell-checks.sh
 ```
-Boots the whole runtime with this OS's backends, and checks the hook, statusLine and hook installer.
-CI runs the tests and the smoke test on Windows, macOS and Linux, plus a Windows + WSL job (`test/ci/wsl-bridge.mjs`) where the plugin on Windows Node discovers a session inside WSL.
+用這個 OS 的後端啟動整個 runtime，並檢查 hook、statusLine 和 hook 安裝程式。
+CI 在 Windows、macOS 和 Linux 上跑測試和 smoke test，另外有一個 Windows + WSL 的 job（`test/ci/wsl-bridge.mjs`）：Windows Node 上的插件要找到 WSL 裡的 session。
 
 ```bash
 npm run dev
 ```
-Runs the hub, providers and preview standalone. Set `ULANZI_LAB_PORT=39301` if the plugin is also running.
+單獨執行 hub、providers 和預覽頁。如果插件也在跑，設定 `ULANZI_LAB_PORT=39301`。
 
 ```bash
 npm run fake -- --n 4 --usage
 ```
-Simulates Claude sessions.
+模擬 Claude session。
 
 ```bash
 node scripts/demo-states.mjs
 ```
-Shows every session look on page 1.
+在第 1 頁顯示每一種 session 外觀。
 
 ```bash
 npm run link        # Windows
 npm run link:mac    # macOS
 ```
-Re-links the plugin and restarts Ulanzi Studio.
+重新連結插件並重啟 Ulanzi Studio。
 
 ```bash
 node scripts/gallery.mjs
 ```
-Re-renders the README screenshots in `docs/images/` from demo data. It needs Chrome or Edge.
+用示範資料重新產生 `docs/images/` 裡的 README 截圖。需要 Chrome 或 Edge。
 
-- Logs: `%LOCALAPPDATA%\ulanzi-lab\plugin.log` (macOS: `~/Library/Application Support/ulanzi-lab/plugin.log`). State: `state.json` and `pomodoro.json` in the same folder.
-- Node debugging: start Studio with `--nodeRemoteDebug`, then attach to `127.0.0.1:9231`.
-- Pages live in [src/pages.js](plugin/com.ulanzi.nwpie.ulanziPlugin/src/pages.js). The profile generator and the preview share it.
+- Log：`%LOCALAPPDATA%\ulanzi-lab\plugin.log`（macOS：`~/Library/Application Support/ulanzi-lab/plugin.log`）。狀態檔：同一個資料夾的 `state.json` 和 `pomodoro.json`。
+- Node 除錯：以 `--nodeRemoteDebug` 啟動 Studio，再 attach 到 `127.0.0.1:9231`。
+- 按鍵頁定義在 [src/pages.js](plugin/com.ulanzi.nwpie.ulanziPlugin/src/pages.js)，profile 產生器和預覽頁共用它。
 
-## Notes and limits
+## 注意事項與限制
 
-- **Quotes.** They come from TWSE MIS when it's reachable, otherwise from Yahoo's chart API (unofficial). Market holidays aren't modelled.
-- **Windows Terminal.** It can't focus a tab by id, so tab focus is a best-effort title match. tmux and VS Code focus are exact.
-- **Elevated windows.** The plugin isn't elevated, so it can't move them.
-- **Port.** The hub uses port 39300 because some machines reserve the 45000–48000 range.
-- **Node inside Ulanzi Studio.** Studio 3.4 for Windows runs plugins on its own bundled Node 20.12.2 (check the Mac build's with the `plugin start` line in the log), which is past end of life and gets no security fixes. So `app.js` checks its own Node first. When it lacks security fixes and a patched Node is installed (PATH, the usual install folders, or `ULANZI_LAB_NODE`), it only supervises: the plugin runs in a child process on that Node and stops when Studio stops the parent. Without a patched Node, or if the child keeps crashing, the plugin runs on Studio's Node and logs a warning. Keep your system Node updated. The hub only listens on `127.0.0.1` and accepts JSON posts only. Your own Node (tools, `npm run dev`, CI) must have them: the minimum per release line is in [src/node-floor.js](plugin/com.ulanzi.nwpie.ulanziPlugin/src/node-floor.js), which the setup scripts and CI check.
+- **報價。** TWSE MIS 連得上時用它，否則用 Yahoo 的 chart API（非官方）。沒有處理休市日。
+- **Windows Terminal。** 無法用 id 切到指定分頁，所以分頁切換是盡量比對標題。tmux 和 VS Code 的切換是精準的。
+- **以系統管理員執行的視窗。** 插件沒有提權，所以移動不了它們。
+- **Port。** Hub 用 39300，因為有些機器保留了 45000–48000 這個範圍。
+- **Ulanzi Studio 裡的 Node。** Windows 版 Studio 3.4 用它內建的 Node 20.12.2 執行插件（Mac 版可看 log 裡的 `plugin start` 那一行），這個版本已經結束支援，不再有資安修正。所以 `app.js` 會先檢查自己的 Node。如果缺資安修正，而系統上裝了已修補的 Node（PATH、常見安裝資料夾或 `ULANZI_LAB_NODE`），它就只負責監督：插件在那個 Node 上的子程序執行，Studio 停掉父程序時一起停止。沒有已修補的 Node，或子程序一直崩潰時，插件就在 Studio 的 Node 上執行並記錄警告。請保持系統 Node 在最新版。Hub 只聽 `127.0.0.1`，也只接受 JSON POST。你自己的 Node（工具、`npm run dev`、CI）一定要有這些修正：各版本線的最低版本在 [src/node-floor.js](plugin/com.ulanzi.nwpie.ulanziPlugin/src/node-floor.js)，安裝腳本和 CI 都會檢查。
 
-> **Tip: let Ulanzi Studio use your system Node (Windows).** Studio starts plugins with its bundled
-> `C:\Program Files (x86)\Ulanzi Studio\nodejs\node.exe`. If you point that file at your system Node with a
-> symbolic link, every Node security update you install applies to all Studio plugins, without waiting for an
-> Ulanzi release. In an administrator PowerShell:
+> **小技巧：讓 Ulanzi Studio 使用系統的 Node（Windows）。** Studio 用它內建的
+> `C:\Program Files (x86)\Ulanzi Studio\nodejs\node.exe` 啟動插件。如果用符號連結把這個檔案指向系統的 Node，
+> 你安裝的每一次 Node 資安更新都會套用到所有 Studio 插件，不用等 Ulanzi 發新版。在系統管理員 PowerShell 執行：
 >
 > ```powershell
 > $dir    = 'C:\Program Files (x86)\Ulanzi Studio\nodejs'
@@ -357,39 +358,39 @@ Re-renders the README screenshots in `docs/images/` from demo data. It needs Chr
 > }
 > ```
 >
-> The second line finds the real `node.exe` behind any version-manager shim. If `$target` sits in a per-shell or temporary folder (for example fnm's `fnm_multishells`), point the link at a stable install such as `C:\Program Files\nodejs\node.exe` instead. Nothing is stopped or renamed unless the target exists.
-> Then start Studio as usual (Start menu), not from this window: anything started here runs as administrator, and so would every plugin. Afterwards the `plugin start` line in the plugin log shows your Node's version, and the plugin no longer needs to switch Node itself.
-> - **Undo:** with Studio closed, delete the link and rename `node.bundled.exe` back to `node.exe`.
-> - **Before updating Studio, undo the link,** then re-apply it afterwards. The installer runs elevated and could otherwise write its old Node through the link over your system Node. If an update already went through with the link in place, check `node -v` and reinstall Node if it changed. If `nodejs\node.exe` is still a link, it now points at the fixed Node again and nothing else is needed. If the update replaced the link with a plain file, delete the stale `node.bundled.exe` and re-apply.
-> - **Other plugins** then run on your Node too. If one of them breaks on a newer major version, undo.
-> - **macOS:** the bundled Node sits inside the signed app bundle, and changing it can stop Studio from launching. Rely on the automatic switch described above instead.
+> 第二行會找出版本管理工具 shim 背後真正的 `node.exe`。如果 `$target` 在每個 shell 各自的資料夾或暫存資料夾（例如 fnm 的 `fnm_multishells`），請改指向穩定的安裝位置，例如 `C:\Program Files\nodejs\node.exe`。目標不存在時，什麼都不會停止或改名。
+> 之後照平常的方式（開始功能表）啟動 Studio，不要從這個視窗啟動：從這裡啟動的程式都以系統管理員執行，所有插件也會。完成後，插件 log 裡 `plugin start` 那一行會顯示你的 Node 版本，插件也不需要再自己切換 Node。
+> - **復原：** 關掉 Studio，刪除連結，再把 `node.bundled.exe` 改回 `node.exe`。
+> - **更新 Studio 之前，先復原連結**，更新完再重新套用。安裝程式以系統管理員執行，否則可能透過連結把它的舊 Node 寫到你的系統 Node 上。如果已經在連結存在時更新了，檢查 `node -v`，版本變了就重裝 Node。如果 `nodejs\node.exe` 仍是連結，它已經又指向修補過的 Node，不用再做什麼。如果更新把連結換成一般檔案，刪掉過期的 `node.bundled.exe` 再重新套用。
+> - **其他插件**也會改用你的 Node。如果有插件在較新的主版本上壞掉，就復原。
+> - **macOS：** 內建的 Node 在有簽章的 App bundle 裡，改動它可能讓 Studio 無法啟動。請改用上面說的自動切換。
 
-## Uninstall
+## 解除安裝
 
-Run this from the repo, inside WSL (or in a terminal on macOS):
+在 repo 裡、WSL 中（macOS 則在終端機）執行：
 
 ```bash
 bash scripts/install-hooks.sh --uninstall
 ```
 
-Then remove the plugin link. On Windows:
+接著移除插件連結。Windows：
 
 ```bash
 powershell -ExecutionPolicy Bypass -File scripts\link-plugin.ps1 -Unlink
 ```
 
-On macOS:
+macOS：
 
 ```bash
 bash scripts/link-plugin.sh --unlink
 ```
 
-## Third-party code
+## 第三方程式碼
 
-- **Ulanzi SDK.** `plugin/.../libs/ulanzi-api` and `libs/ulanzi-html` are from the [UlanziDeckPlugin-SDK](https://github.com/UlanziTechnology/UlanziDeckPlugin-SDK) (Apache-2.0).
+- **Ulanzi SDK。** `plugin/.../libs/ulanzi-api` 和 `libs/ulanzi-html` 來自 [UlanziDeckPlugin-SDK](https://github.com/UlanziTechnology/UlanziDeckPlugin-SDK)（Apache-2.0）。
 
-See [docs/survey.md](docs/survey.md) for the research behind the design. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md) to contribute or report a problem.
+設計背後的研究見 [docs/survey.md](docs/survey.md)。想參與開發或回報問題，請見 [CONTRIBUTING.md](CONTRIBUTING.md) 和 [SECURITY.md](SECURITY.md)。
 
-## License
+## 授權
 
-[MIT](LICENSE). Third-party code keeps its own license (see [NOTICE](NOTICE)).
+[MIT](LICENSE)。第三方程式碼保留各自的授權（見 [NOTICE](NOTICE)）。
