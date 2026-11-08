@@ -7,6 +7,6 @@
   "main": "app.js",
   "dependencies": {
     "koffi": "^2.9.0",
-    "ws": "^8.18.0"
+    "ws": "^8.22.1"
   }
 }
